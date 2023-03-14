@@ -42,7 +42,7 @@ public class ParisTimingTest {
         assertEquals(840f, timing.getInterWordLength());
         assertEquals(10f, timing.getWpm());
 
-        Exception e = assertThrows(IllegalArgumentException.class, () ->
+        assertThrows(IllegalArgumentException.class, () ->
             timing.calculateSpeedFromWpm(0)
         );
     }
