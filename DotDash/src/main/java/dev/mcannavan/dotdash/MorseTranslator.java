@@ -1,10 +1,11 @@
 package dev.mcannavan.dotdash;
 
 public class MorseTranslator {
+    private MorseDictionary dictionary;
 
-    //string text to morse string[][]
-
-    //string morse to text string
-
-    //string[][] morse to text string
+    //TODO
+    //add constructors
+    //add methods:
+    // -translate String to Char[][]
+    // -translate Char[][] to String
 }
