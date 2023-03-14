@@ -36,17 +36,15 @@ public class MorseTimingFactory {
      * @param fwpm A non-negative, non-zero {@code float} representing the alternate speed between characters and between words.
      * @return an object of type {@code FarnsworthTiming}
      */
-    public static FarnsworthTiming createFarnsworthTimingFromWpm(float wpm, float fwpm) {
-        return new FarnsworthTiming();
+    public static FarnsworthTiming createFarnsworthTimingFromWpm(float fwpm, float wpm) {
+        FarnsworthTiming timing = new FarnsworthTiming();
+        timing.calculateSpeedFromWpm(fwpm, wpm);
+        return timing;
     }
 
-    /**
-     * Create farnsworth timing from wpm farnsworth timing.
-     *
-     * @param wpm the wpm
-     * @return the farnsworth timing
-     */
     public static FarnsworthTiming createFarnsworthTimingFromWpm(float wpm) {
-        return new FarnsworthTiming();
+        FarnsworthTiming timing = new FarnsworthTiming();
+        timing.calculateSpeedFromWpm(wpm*0.75f, wpm); // using wpm for both pWpm and fWpm
+        return timing;
     }
 }

@@ -40,14 +40,4 @@ public interface IMorseTiming {
      */
     float getInterWordLength();
 
-    /**
-     * Gets the words per minute
-     *
-     * @return the words per minute as a {@code float}
-     */
-    float getWpm();
-
-    //public void calculateSpeedFromMillis(float ms);
-    //public void calculateSpeedFromWpm(float wpm);
-
 }

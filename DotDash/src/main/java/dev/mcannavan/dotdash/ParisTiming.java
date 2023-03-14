@@ -1,42 +1,60 @@
 package dev.mcannavan.dotdash;
 
 /**
- * A set of morse timings following the PARIS approach. Implements {@link IMorseTiming}
+ * A set of Morse timings following the PARIS approach. Implements {@link IMorseTiming}.
  */
 public class ParisTiming implements IMorseTiming {
-    private float ditLengthMillis; //length of a dit (dot)
-    private float dahLengthMillis; //length of a dah (dash)
-    private float intraCharLengthMillis; //space between dits and dahs within a character
-    private float interCharLengthMillis; //space between characters within a word
-    private float interWordLengthMillis; //space between words
-    private float wpm; // the words per minute
+    private static final float MAX_WPM = 240_000f;
+    private float ditLengthMillis; // length of a dit (dot)
+    private float dahLengthMillis; // length of a dah (dash)
+    private float intraCharLengthMillis; // space between dits and dahs within a character
+    private float interCharLengthMillis; // space between characters within a word
+    private float interWordLengthMillis; // space between words
+    private float wpm; // words per minute
 
+    /**
+     * Returns the length of a dit (dot) in milliseconds.
+     */
     @Override
     public float getDitLength() {
         return ditLengthMillis;
     }
 
+    /**
+     * Returns the length of a dah (dash) in milliseconds.
+     */
     @Override
     public float getDahLength() {
         return dahLengthMillis;
     }
 
+    /**
+     * Returns the space between characters within a word in milliseconds.
+     */
     @Override
     public float getInterCharLength() {
         return interCharLengthMillis;
     }
 
+    /**
+     * Returns the space between dits and dahs within a character in milliseconds.
+     */
     @Override
     public float getIntraCharLength() {
         return intraCharLengthMillis;
     }
 
+    /**
+     * Returns the space between words in milliseconds.
+     */
     @Override
     public float getInterWordLength() {
         return interWordLengthMillis;
     }
 
-    @Override
+    /**
+     * Returns the words per minute.
+     */
     public float getWpm() {
         return wpm;
     }
@@ -44,35 +62,33 @@ public class ParisTiming implements IMorseTiming {
     /**
      * Calculates the length of all instance variables from the given length of a dit in milliseconds.
      *
-     * @param ms A non-negative, non-zero {@code float} representing the length of 1 unit (equivalent to a dit) in milliseconds
-     * @throws IllegalArgumentException If input is negative or zero
+     * @param ms A non-negative, non-zero {@code float} representing the length of 1 unit (equivalent to a dit) in milliseconds.
+     * @throws IllegalArgumentException If input is negative or zero.
      */
     public void calculateSpeedFromMillis(float ms) throws IllegalArgumentException {
-        if(ms <= 0) {
-            throw new IllegalArgumentException("expected non-negative, non-zero value of ms. Actual value:" + ms);
+        if (ms < 0.005) {
+            throw new IllegalArgumentException("Input ms must be greater than or equal to " + 0.005 + ". Actual value: " + ms);
         }
-        ms = (float)(Math.round((double)ms*1000d)/1000d); //round to 3 decimals, using double in case of overflow
-        wpm = Math.round(60f * (1f / (ms / 1000f)) / 50f *100f)/100f; //calculate the wpm from the rounded ms
+        ms = (float) (Math.round((double) ms * 1000d) / 1000d);
+        wpm = Math.round((60f * (1f / (ms / 1000f)) / 50f) * 100f) / 100f;
         ditLengthMillis = ms;
-        dahLengthMillis = ms*3;
-        interCharLengthMillis = ms*3;
+        dahLengthMillis = ms * 3;
+        interCharLengthMillis = ms * 3;
         intraCharLengthMillis = ms;
-        interWordLengthMillis = ms*7;
+        interWordLengthMillis = ms * 7;
     }
 
     /**
      * Calculate the length of all instance variables from a given words per minute.
      *
      * @param wpm A non-negative, non-zero {@code float} representing the desired words per minute.
-     * @throws IllegalArgumentException If input is negative or zero
+     * @throws IllegalArgumentException If input is negative or zero or greater than the maximum allowed WPM.
      */
-    public void calculateSpeedFromWpm(float wpm) throws IllegalArgumentException, ArithmeticException {
-        //potential floating point overflow if wpm ~ 3.52658326306e-36,
-        if(wpm <= 0) {
-            throw new IllegalArgumentException("expected non-negative, non-zero value of wpm. Actual value:" + wpm);
+    public void calculateSpeedFromWpm(float wpm) throws IllegalArgumentException {
+        if (wpm <= 0 || wpm > MAX_WPM) {
+            throw new IllegalArgumentException("Input wpm must be greater than 0 and less than or equal to " + MAX_WPM + ". Actual value: " + wpm);
         }
         float ms = 1f / ((wpm * 50f) / 60f) * 1000f;
-
         calculateSpeedFromMillis(ms);
     }
 }

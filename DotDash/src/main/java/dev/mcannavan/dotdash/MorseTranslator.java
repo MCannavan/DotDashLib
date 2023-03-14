@@ -2,8 +2,6 @@ package dev.mcannavan.dotdash;
 
 public class MorseTranslator {
 
-
-
     //TODO
     //add hashmap field for mapping characters to morse equivalent
     //add constructors
