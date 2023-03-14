@@ -4,6 +4,7 @@ package dev.mcannavan.dotdash;
  * An {@code Interface} representing the timings/durations of morse code
  */
 public interface IMorseTiming {
+
     /**
      * Gets the length of a dit.
      *
@@ -26,16 +27,16 @@ public interface IMorseTiming {
     float getInterCharLength();
 
     /**
-     * Gets the intra-char length.
+     * Gets the intra-character length.
      *
-     * @return the intra char length as a {@code float}
+     * @return the intra-character length as a {@code float}
      */
     float getIntraCharLength();
 
     /**
      * Gets the inter-word length.
      *
-     * @return the inter word length as a {@code float}
+     * @return the inter-word length as a {@code float}
      */
     float getInterWordLength();
 

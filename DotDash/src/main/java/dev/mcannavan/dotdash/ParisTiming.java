@@ -44,15 +44,15 @@ public class ParisTiming implements IMorseTiming {
     /**
      * Calculates the length of all instance variables from the given length of a dit in milliseconds.
      *
-     * @param ms a non-negative, non-zero {@code float} representing the length of 1 unit (equivalent to a dit) in milliseconds
+     * @param ms A non-negative, non-zero {@code float} representing the length of 1 unit (equivalent to a dit) in milliseconds
      * @throws IllegalArgumentException If input is negative or zero
      */
     public void calculateSpeedFromMillis(float ms) throws IllegalArgumentException {
         if(ms <= 0) {
-            throw new IllegalArgumentException("expected non-negative, non-zero  value of ms. Actual value:" + ms);
+            throw new IllegalArgumentException("expected non-negative, non-zero value of ms. Actual value:" + ms);
         }
-        ms = Math.round(ms*100f)/100f; //round to 2 d.p.
-        wpm = Math.round(60f * (1f / (ms / 1000f)) / 50f *100f)/100f; //calculate the rounded wpm from the rounded ms
+        ms = (float)(Math.round((double)ms*1000d)/1000d); //round to 3 decimals, using double in case of overflow
+        wpm = Math.round(60f * (1f / (ms / 1000f)) / 50f *100f)/100f; //calculate the wpm from the rounded ms
         ditLengthMillis = ms;
         dahLengthMillis = ms*3;
         interCharLengthMillis = ms*3;
@@ -63,10 +63,11 @@ public class ParisTiming implements IMorseTiming {
     /**
      * Calculate the length of all instance variables from a given words per minute.
      *
-     * @param wpm a non-negative, non-zero {@code float} representing the desired words per minute.
+     * @param wpm A non-negative, non-zero {@code float} representing the desired words per minute.
      * @throws IllegalArgumentException If input is negative or zero
      */
-    public void calculateSpeedFromWpm(float wpm) throws IllegalArgumentException {
+    public void calculateSpeedFromWpm(float wpm) throws IllegalArgumentException, ArithmeticException {
+        //potential floating point overflow if wpm ~ 3.52658326306e-36,
         if(wpm <= 0) {
             throw new IllegalArgumentException("expected non-negative, non-zero value of wpm. Actual value:" + wpm);
         }
