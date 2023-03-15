@@ -65,11 +65,11 @@ public class ParisTiming implements IMorseTiming {
      * @throws IllegalArgumentException If input is negative or zero.
      */
     public void calculateSpeedFromMillis(float ms) throws IllegalArgumentException {
-        if (ms < 0.005) {
-            throw new IllegalArgumentException("Input ms must be greater than or equal to " + 0.005 + ". Actual value: " + ms);
+        if (ms < 0) {
+            throw new IllegalArgumentException("Input ms must be greater than or equal to " + 0 + ". Actual value: " + ms);
         }
-        ms = (float) (Math.round((double) ms * 1000d) / 1000d);
-        wpm = Math.round((60f * (1f / (ms / 1000f)) / 50f) * 100f) / 100f;
+        //ms = (float) (Math.round((double) ms * 1000d) / 1000d);
+        wpm = (60f * (1f / (ms / 1000f)) / 50f);
         ditLengthMillis = ms;
         dahLengthMillis = ms * 3;
         interCharLengthMillis = ms * 3;
@@ -82,16 +82,16 @@ public class ParisTiming implements IMorseTiming {
      *
      * @param wpm A non-negative, non-zero {@code float} representing the desired words per minute.
      * @throws IllegalArgumentException If input wpm is negative or zero or greater than the maximum allowed WPM.
-     * @throws ArithmeticException If wpm is too small, causing a floating-point overflow when calculating the output
+     * @throws ArithmeticException      If wpm is too small, due to floating-point overflow when calculating ms
      */
     public void calculateSpeedFromWpm(float wpm) throws IllegalArgumentException, ArithmeticException {
         if (wpm <= 0) {
             throw new IllegalArgumentException("Input wpm must be greater than 0. Actual value: " + wpm);
         }
-        double ms = 1f / ((wpm * 50f) / 60f) * 1000f;
-        if (ms > Float.MAX_VALUE) { //checking for overflow during calculation, as actual min value hard to determine
-            throw new ArithmeticException("");
+        float ms = 1f / ((wpm * 50f) / 60f) * 1000f;
+        if (Float.isInfinite(7*ms)) { //check largest instance variable for overflow
+            throw new ArithmeticException("floating-point overflow when calculating ms. ms = "+ ms + ", wpm = " + wpm);
         }
-        calculateSpeedFromMillis((float) ms);
+        calculateSpeedFromMillis(ms);
     }
 }

@@ -10,8 +10,8 @@ public class FarnsworthTiming implements IMorseTiming {
     private float intraCharLengthMillis; //space between dits and dahs within a character (in PARIS wpm / pWpm)
     private float interCharLengthMillis; //space between characters within a word (in Farnsworth wpm / fWpm)
     private float interWordLengthMillis; //space between words (in Farnsworth wpm /fWpm)
-    private float pWpm; // the words per minute using the PARIS approach for dit, dah, and intra-character lang
-    private float fWpm; // the words per minute using the Farnsworth approach for other spacing
+    private float pWpm; // the words per minute using the PARIS approach for dit, dah, and intra-character lang, i.e. the character transmission speed
+    private float fWpm; // the words per minute using the Farnsworth approach for other spacing, i.e. the overall transmission speed
 
     @Override
     public float getDitLength() {
@@ -38,15 +38,16 @@ public class FarnsworthTiming implements IMorseTiming {
         return interWordLengthMillis;
     }
 
-    public float getpWpm() {
+    public float getPWpm() {
         return pWpm;
     }
 
-    public float getfWpm() {
+    public float getFWpm() {
         return fWpm;
     }
 
-    public void calculateSpeedFromMillis(float pMs, float fMs) throws IllegalArgumentException {
+    public void calculateSpeedFromMillis(float fMs, float pMs) throws IllegalArgumentException {
+
         if (pMs <= 0 || fMs <= 0) {
             throw new IllegalArgumentException("expected non-negative, non-zero values of pMs and fMs. Actual values: pMs=" + pMs + ", fMs=" + fMs);
         }
@@ -58,33 +59,39 @@ public class FarnsworthTiming implements IMorseTiming {
         intraCharLengthMillis = parisTiming.getIntraCharLength();
 
         float pWpm = parisTiming.getWpm();
-        float fWpm = 60 / ((19 * fMs) / 1000f + 37.2f/pWpm);
-
+        float fWpm = 60 / ((19 * fMs) / 1000f + 37.2f / pWpm);
         this.pWpm = pWpm;
         this.fWpm = fWpm;
 
         interCharLengthMillis = 3 * fMs;
         interWordLengthMillis = 7 * fMs;
-
     }
 
-    public void calculateSpeedFromWpm(float pWpm, float fWpm) throws IllegalArgumentException {
+    public void calculateSpeedFromWpm(float fWpm, float pWpm) throws IllegalArgumentException, ArithmeticException {
+        //max ratio between fWpm and pWpm is ~ 1.6129 || min pWpm:fWpm = 0.62
         if (pWpm <= 0 || fWpm <= 0) {
             throw new IllegalArgumentException("expected non-negative, non-zero values of pWpm and fWpm. Actual values: pWpm=" + pWpm + ", fWpm=" + fWpm);
+        } else if (pWpm/fWpm <= 0.62) { //reversed ratio for better accuracy
+            throw new ArithmeticException("ratio between fWpm and pWpm too high. maximum ratio: ~1.6129. actual: "+pWpm/fWpm);
         }
+
         this.pWpm = pWpm;
         this.fWpm = fWpm;
 
-        ParisTiming parisTiming = new ParisTiming();
-        parisTiming.calculateSpeedFromWpm(pWpm);
-        ditLengthMillis = parisTiming.getDitLength();
-        dahLengthMillis = parisTiming.getDahLength();
-        intraCharLengthMillis = parisTiming.getIntraCharLength();
+        float fMs = (((60f / fWpm) - (37.2f / pWpm)) * 1000f) / 19f;
+        float pMs = 1 / ((pWpm * 50f) / 60) * 1000;
+        if (Float.isInfinite(7*fMs) || Float.isInfinite(3*pMs)) {
+            throw new ArithmeticException("floating-point overflow when calculating fMs or pMs." +
+                    "\nfMs: " + fMs + ", pMs: " + pMs +
+                    "\nfWpm: " + fWpm +  ", pWpm: " + pWpm +
+                    "");
+        }
 
-        float fMs = (((60/fWpm) - (37.2f/pWpm)) * 1000f) / 19f;
+        ditLengthMillis = pMs;
+        dahLengthMillis = 3 * pMs;
+        intraCharLengthMillis = pMs;
 
-        interCharLengthMillis = 3*fMs;
-        interWordLengthMillis = 7*fMs;
+        interCharLengthMillis = 3 * fMs;
+        interWordLengthMillis = 7 * fMs;
     }
-
 }
