@@ -1,7 +1,7 @@
 package dev.mcannavan.dotdash;
 
 /**
- * A set of Morse timings following the PARIS approach. Implements {@link IMorseTiming}.
+ * A set of morse timings following the PARIS approach. Implements {@link IMorseTiming}.
  */
 public class ParisTiming implements IMorseTiming {
     private float ditLengthMillis; // length of a dit (dot)

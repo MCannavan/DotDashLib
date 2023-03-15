@@ -1,9 +1,5 @@
 package dev.mcannavan.dotdash;
 
-import com.google.common.collect.BiMap;
-
-import java.util.Map;
-
 /**
  * A set of morse timings following the Farnsworth approach. Implements {@link IMorseTiming}
  */
