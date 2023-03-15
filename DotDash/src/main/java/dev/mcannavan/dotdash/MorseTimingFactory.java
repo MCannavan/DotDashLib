@@ -29,16 +29,28 @@ public class MorseTimingFactory {
         return timing;
     }
 
-    /**
-     * Creates a {@link FarnsworthTiming} object from a given words per minute and farnsworth words per minute
-     *
-     * @param wpm A non-negative, non-zero {@code float} representing the words per minute from the PARIS approach.
-     * @param fwpm A non-negative, non-zero {@code float} representing the alternate speed between characters and between words.
-     * @return an object of type {@code FarnsworthTiming}
-     */
-    public static FarnsworthTiming createFarnsworthTimingFromWpm(float fwpm, float wpm) {
+    public static FarnsworthTiming createFarnsworthTimingFromMs(float fMs, float pMs) {
         FarnsworthTiming timing = new FarnsworthTiming();
-        timing.calculateSpeedFromWpm(fwpm, wpm);
+        timing.calculateSpeedFromMillis(fMs, pMs);
+        return timing;
+    }
+
+    public static FarnsworthTiming createFarnsworthTimingFromMs(float ms) {
+        FarnsworthTiming timing = new FarnsworthTiming();
+        timing.calculateSpeedFromMillis(ms*0.75f, ms);
+        return timing;
+    }
+
+        /**
+         * Creates a {@link FarnsworthTiming} object from a given words per minute and farnsworth words per minute
+         *
+         * @param pWpm A non-negative, non-zero {@code float} representing the words per minute from the PARIS approach.
+         * @param fWpm A non-negative, non-zero {@code float} representing the alternate speed between characters and between words.
+         * @return an object of type {@code FarnsworthTiming}
+         */
+    public static FarnsworthTiming createFarnsworthTimingFromWpm(float fWpm, float pWpm) {
+        FarnsworthTiming timing = new FarnsworthTiming();
+        timing.calculateSpeedFromWpm(fWpm, pWpm);
         return timing;
     }
 

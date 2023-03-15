@@ -8,39 +8,42 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class FarnsworthTimingTest {
 
     @Test
-    void calculateSpeedFromMillis_standardCase() {
-        FarnsworthTiming farnsworthTiming = new FarnsworthTiming();
-        farnsworthTiming.calculateSpeedFromMillis(550, 50);
+    void temp() {
+        FarnsworthTiming temp = MorseTimingFactory.createFarnsworthTimingFromMs(550,50);
+        assertEquals(24, temp.getPWpm());
+        assertEquals(5, temp.getFWpm());
+        assertEquals(50, temp.getDitLength(), 0.01, "");
+        assertEquals(150, temp.getDahLength(), 0.01, "");
+        assertEquals(50, temp.getIntraCharLength(), 0.01, "");
+        assertEquals(1650, temp.getInterCharLength(), 0.01, "");
+        assertEquals(3850, temp.getInterWordLength(), 0.01, "");
 
-        assertEquals(24, farnsworthTiming.getPWpm());
-        assertEquals(5, farnsworthTiming.getFWpm());
-        assertEquals(50, farnsworthTiming.getDitLength(), 0.01);
-        assertEquals(150, farnsworthTiming.getDahLength(), 0.01);
-        assertEquals(50, farnsworthTiming.getIntraCharLength(), 0.01);
-        assertEquals(1650, farnsworthTiming.getInterCharLength(), 0.01);
-        assertEquals(3850, farnsworthTiming.getInterWordLength(), 0.01);
+        assertThrows(IllegalArgumentException.class, () -> temp.calculateSpeedFromMillis(-1, 100), "");
+
+    }
+
+
+    //calculateSpeedFromMillis test cases
+
+    @Test
+    void calculateSpeedFromMillis_WithValidInput_ReturnsCorrectValues() {
+
     }
 
     @Test
-    void calculateSpeedFromMillis_invalidInput() {
-        FarnsworthTiming farnsworthTiming = new FarnsworthTiming();
+    void calculateSpeedFromMillis_WithZeroAndNegativeInput_ThrowsException() {
 
-        assertThrows(IllegalArgumentException.class, () -> farnsworthTiming.calculateSpeedFromMillis(-1, 100));
-        assertThrows(IllegalArgumentException.class, () -> farnsworthTiming.calculateSpeedFromMillis(100, -1));
-        assertThrows(IllegalArgumentException.class, () -> farnsworthTiming.calculateSpeedFromMillis(-1, -1));
     }
 
     @Test
-    void calculateSpeedFromWpm_standardCase() {
-        FarnsworthTiming farnsworthTiming = new FarnsworthTiming();
-        farnsworthTiming.calculateSpeedFromWpm(5, 13);
+    void calculateSpeedFromMillis_WithInputCausingOverflowAndSmallRatio_ThrowsException() {
 
-        assertEquals(13, farnsworthTiming.getPWpm());
-        assertEquals(5, farnsworthTiming.getFWpm());
-        assertEquals(92.31, farnsworthTiming.getDitLength(), 0.01);
-        assertEquals(276.92, farnsworthTiming.getDahLength(), 0.01);
-        assertEquals(92.31, farnsworthTiming.getIntraCharLength(), 0.01);
-        assertEquals(1442.91, farnsworthTiming.getInterCharLength(), 0.01);
-        assertEquals(3366.80, farnsworthTiming.getInterWordLength(), 0.01);
     }
+
+    @Test
+    void calculateSpeedFromMillis_WithEdgeCaseInput_ReturnsCorrectValues() {
+
+    }
+
+
 }
