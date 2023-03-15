@@ -4,7 +4,6 @@ package dev.mcannavan.dotdash;
  * A set of Morse timings following the PARIS approach. Implements {@link IMorseTiming}.
  */
 public class ParisTiming implements IMorseTiming {
-    private static final float MAX_WPM = 240_000f;
     private float ditLengthMillis; // length of a dit (dot)
     private float dahLengthMillis; // length of a dah (dash)
     private float intraCharLengthMillis; // space between dits and dahs within a character
@@ -82,13 +81,17 @@ public class ParisTiming implements IMorseTiming {
      * Calculate the length of all instance variables from a given words per minute.
      *
      * @param wpm A non-negative, non-zero {@code float} representing the desired words per minute.
-     * @throws IllegalArgumentException If input is negative or zero or greater than the maximum allowed WPM.
+     * @throws IllegalArgumentException If input wpm is negative or zero or greater than the maximum allowed WPM.
+     * @throws ArithmeticException If wpm is too small, causing a floating-point overflow when calculating the output
      */
-    public void calculateSpeedFromWpm(float wpm) throws IllegalArgumentException {
-        if (wpm <= 0 || wpm > MAX_WPM) {
-            throw new IllegalArgumentException("Input wpm must be greater than 0 and less than or equal to " + MAX_WPM + ". Actual value: " + wpm);
+    public void calculateSpeedFromWpm(float wpm) throws IllegalArgumentException, ArithmeticException {
+        if (wpm <= 0) {
+            throw new IllegalArgumentException("Input wpm must be greater than 0. Actual value: " + wpm);
         }
-        float ms = 1f / ((wpm * 50f) / 60f) * 1000f;
-        calculateSpeedFromMillis(ms);
+        double ms = 1f / ((wpm * 50f) / 60f) * 1000f;
+        if (ms > Float.MAX_VALUE) { //checking for overflow during calculation, as actual min value hard to determine
+            throw new ArithmeticException("");
+        }
+        calculateSpeedFromMillis((float) ms);
     }
 }

@@ -10,7 +10,7 @@ class FarnsworthTimingTest {
     @Test
     void calculateSpeedFromMillis_standardCase() {
         FarnsworthTiming farnsworthTiming = new FarnsworthTiming();
-        farnsworthTiming.calculateSpeedFromMillis(550, 50);
+        farnsworthTiming.calculateSpeedFromMillis(50, 550);
 
         assertEquals(24, farnsworthTiming.getpWpm());
         assertEquals(5, farnsworthTiming.getfWpm());
@@ -33,7 +33,7 @@ class FarnsworthTimingTest {
     @Test
     void calculateSpeedFromWpm_standardCase() {
         FarnsworthTiming farnsworthTiming = new FarnsworthTiming();
-        farnsworthTiming.calculateSpeedFromWpm(5, 13);
+        farnsworthTiming.calculateSpeedFromWpm(13, 5);
 
         assertEquals(13, farnsworthTiming.getpWpm());
         assertEquals(5, farnsworthTiming.getfWpm());

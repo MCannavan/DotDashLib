@@ -38,44 +38,53 @@ public class FarnsworthTiming implements IMorseTiming {
         return interWordLengthMillis;
     }
 
-    /**
-     * Returns the words per minute (WPM) using the PARIS approach for dit, dah, and intra-character length.
-     *
-     * @return A {@code float} representing the PARIS WPM.
-     */
     public float getpWpm() {
         return pWpm;
     }
 
-    /**
-     * Returns the words per minute (WPM) using the Farnsworth approach for inter-character and inter-word spacing.
-     *
-     * @return A {@code float} representing the Farnsworth WPM.
-     */
     public float getfWpm() {
         return fWpm;
     }
 
-    /**
-     * Calculates the Morse timings based on the given Farnsworth and PARIS unit lengths in milliseconds.
-     *
-     * @param fMs A non-negative, non-zero {@code float} representing the Farnsworth unit length in milliseconds.
-     * @param pMs A non-negative, non-zero {@code float} representing the PARIS unit length in milliseconds.
-     * @throws IllegalArgumentException If the input values are negative or zero.
-     */
-    public void calculateSpeedFromMillis(float fMs, float pMs) throws IllegalArgumentException {
-        // ...
+    public void calculateSpeedFromMillis(float pMs, float fMs) throws IllegalArgumentException {
+        if (pMs <= 0 || fMs <= 0) {
+            throw new IllegalArgumentException("expected non-negative, non-zero values of pMs and fMs. Actual values: pMs=" + pMs + ", fMs=" + fMs);
+        }
+
+        ParisTiming parisTiming = new ParisTiming();
+        parisTiming.calculateSpeedFromMillis(pMs);
+        ditLengthMillis = parisTiming.getDitLength();
+        dahLengthMillis = parisTiming.getDahLength();
+        intraCharLengthMillis = parisTiming.getIntraCharLength();
+
+        float pWpm = parisTiming.getWpm();
+        float fWpm = 60 / ((19 * fMs) / 1000f + 37.2f/pWpm);
+
+        this.pWpm = pWpm;
+        this.fWpm = fWpm;
+
+        interCharLengthMillis = 3 * fMs;
+        interWordLengthMillis = 7 * fMs;
+
     }
 
-    /**
-     * Calculates the Morse timings based on the given Farnsworth and PARIS words per minute (WPM).
-     *
-     * @param fWpm A non-negative, non-zero {@code float} representing the Farnsworth words per minute.
-     * @param pWpm A non-negative, non-zero {@code float} representing the PARIS words per minute.
-     * @throws IllegalArgumentException If the input values are negative or zero.
-     */
-    public void calculateSpeedFromWpm(float fWpm, float pWpm) throws IllegalArgumentException {
-        // ...
+    public void calculateSpeedFromWpm(float pWpm, float fWpm) throws IllegalArgumentException {
+        if (pWpm <= 0 || fWpm <= 0) {
+            throw new IllegalArgumentException("expected non-negative, non-zero values of pWpm and fWpm. Actual values: pWpm=" + pWpm + ", fWpm=" + fWpm);
+        }
+        this.pWpm = pWpm;
+        this.fWpm = fWpm;
+
+        ParisTiming parisTiming = new ParisTiming();
+        parisTiming.calculateSpeedFromWpm(pWpm);
+        ditLengthMillis = parisTiming.getDitLength();
+        dahLengthMillis = parisTiming.getDahLength();
+        intraCharLengthMillis = parisTiming.getIntraCharLength();
+
+        float fMs = (((60/fWpm) - (37.2f/pWpm)) * 1000f) / 19f;
+
+        interCharLengthMillis = 3*fMs;
+        interWordLengthMillis = 7*fMs;
     }
 
 }
