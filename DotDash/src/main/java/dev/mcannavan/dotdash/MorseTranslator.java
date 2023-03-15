@@ -1,11 +1,25 @@
 package dev.mcannavan.dotdash;
 
-public class MorseTranslator {
+import com.google.common.collect.BiMap;
 
-    //TODO
-    //add hashmap field for mapping characters to morse equivalent
-    //add constructors
-    //add methods:
-    // -translate String to Char[][]
-    // -translate Char[][] to String
+public class MorseTranslator {
+    private final BiMap<Character, String> morseCodeMap;
+
+    // Constructor that accepts a predefined CharacterSet enum
+    public MorseTranslator(CharacterSet characterSet) {
+        morseCodeMap = characterSet.getCharacterSet();
+    }
+
+    // Constructor that accepts a custom character set as a BiMap
+    public MorseTranslator(BiMap<Character, String> customCharacterSet) {
+        morseCodeMap = customCharacterSet;
+    }
+
+    public String toMorse(char c) {
+        return morseCodeMap.get(c);
+    }
+
+    public char fromMorse(String morse) {
+        return morseCodeMap.inverse().get(morse);
+    }
 }

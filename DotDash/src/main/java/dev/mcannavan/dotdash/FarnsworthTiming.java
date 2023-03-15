@@ -1,5 +1,9 @@
 package dev.mcannavan.dotdash;
 
+import com.google.common.collect.BiMap;
+
+import java.util.Map;
+
 /**
  * A set of morse timings following the Farnsworth approach. Implements {@link IMorseTiming}
  */
@@ -68,7 +72,7 @@ public class FarnsworthTiming implements IMorseTiming {
     }
 
     public void calculateSpeedFromWpm(float fWpm, float pWpm) throws IllegalArgumentException, ArithmeticException {
-        //max ratio between fWpm and pWpm is ~ 1.6129 || min pWpm:fWpm = 0.62
+        //max ratio fWpm:pWpm is ~ 1.6129 or min pWpm:fWpm = 0.62
         if (pWpm <= 0 || fWpm <= 0) {
             throw new IllegalArgumentException("expected non-negative, non-zero values of pWpm and fWpm. Actual values: pWpm=" + pWpm + ", fWpm=" + fWpm);
         } else if (pWpm/fWpm <= 0.62) { //reversed ratio for better accuracy
