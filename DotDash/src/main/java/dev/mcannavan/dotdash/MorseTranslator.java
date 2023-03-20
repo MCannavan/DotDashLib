@@ -1,7 +1,6 @@
 package dev.mcannavan.dotdash;
 
 import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableBiMap;
 
 import java.util.Map;
