@@ -2,24 +2,72 @@ package dev.mcannavan.dotdash;
 
 import com.google.common.collect.BiMap;
 
-public class MorseTranslator {
-    private final BiMap<Character, String> morseCodeMap;
+import java.util.Arrays;
+import java.util.Map;
 
-    // Constructor that accepts a predefined CharacterSet enum
-    public MorseTranslator(CharacterSet characterSet) {
-        morseCodeMap = characterSet.getCharacterSet();
+public class MorseTranslator implements IMorseTranslator{
+
+    private BiMap<Character, String> characterMap;
+
+    @Override
+    public BiMap<Character, String> getMap() {
+        return characterMap;
     }
 
-    // Constructor that accepts a custom character set as a BiMap
-    public MorseTranslator(BiMap<Character, String> customCharacterSet) {
-        morseCodeMap = customCharacterSet;
+    @Override
+    public void addMap(Map<Character, String> map) throws IllegalArgumentException{
+        BiMap<Character, String> temp = characterMap;
+        try {
+            temp.putAll(map);
+        } catch(IllegalArgumentException e) {
+            throw new IllegalArgumentException("Exception when adding map to characterMap");
+        }
+        characterMap.putAll(map);
     }
 
-    public String toMorse(char c) {
-        return morseCodeMap.get(c);
+    @Override
+    public void addPair(char key, String value) throws IllegalArgumentException {
+        BiMap<Character, String> temp = characterMap;
+        try {
+            temp.put(key, value);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("");
+        }
+        characterMap.put(key, value);
     }
 
-    public char fromMorse(String morse) {
-        return morseCodeMap.inverse().get(morse);
+    @Override
+    public void replacePair(char key, String value) {
+        characterMap.forcePut(key, value);
+    }
+
+    @Override
+    public boolean containsCharacter(char key) {
+        return characterMap.containsKey(key);
+    }
+
+    @Override
+    public boolean containsMorse(String value) {
+        return characterMap.containsValue(value);
+    }
+
+    @Override
+    public boolean containsMorse(char[] value) {
+        String morse = Arrays.toString(value);
+        return containsMorse(morse);
+    }
+
+    @Override
+    public char[][][] toMorse(String text) {
+        String[] words = text.split(" ");
+        char[][][] morse = new char[words.length][][];
+        for (int i = 0; i < words.length; i++) {
+            char[] letters = words[i].toCharArray();
+            morse[i] = new char[letters.length][];
+            for (int j = 0; j < letters.length; j++) {
+                morse[i][j] = characterMap.get(letters[j]).toCharArray();
+            }
+        }
+        return morse;
     }
 }
