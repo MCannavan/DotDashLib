@@ -19,7 +19,7 @@ public class MorseTranslator {
     }
 
     public MorseTranslator addMap(Map<Character, String> map) throws IllegalArgumentException {
-        BiMap<Character, String> temp = HashBiMap.create(characterMap);
+        BiMap<Character, String> temp = BiMap.create(characterMap);
         try {
             temp.putAll(map);
         } catch (IllegalArgumentException e) {
