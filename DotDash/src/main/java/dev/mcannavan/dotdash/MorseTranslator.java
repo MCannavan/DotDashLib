@@ -1,6 +1,7 @@
 package dev.mcannavan.dotdash;
 
 import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableBiMap;
 
 import java.util.Map;
@@ -18,7 +19,7 @@ public class MorseTranslator {
     }
 
     public MorseTranslator addMap(Map<Character, String> map) throws IllegalArgumentException {
-        BiMap<Character, String> temp = BiMap.create(characterMap);
+        BiMap<Character, String> temp = HashBiMap.create(characterMap);
         try {
             temp.putAll(map);
         } catch (IllegalArgumentException e) {
