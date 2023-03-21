@@ -52,16 +52,45 @@ public class MorseTranslator {
         return containsMorse(morse);
     }
 
-    public char[][][] toMorse(String text) {
+    public char[][][] toMorse(String text) throws NullPointerException{
+        text = text.toUpperCase();
         String[] words = text.split(" ");
         char[][][] morse = new char[words.length][][];
         for (int i = 0; i < words.length; i++) {
             char[] letters = words[i].toCharArray();
             morse[i] = new char[letters.length][];
             for (int j = 0; j < letters.length; j++) {
-                morse[i][j] = characterMap.get(letters[j]).toCharArray();
+                if(characterMap.get(letters[j]) != null) {
+                    morse[i][j] = characterMap.get(letters[j]).toCharArray();
+                } else {
+                    throw new NullPointerException("could not find character \""+letters[j]+"\" in characterMap");
+                }
             }
         }
         return morse;
+    }
+
+    public String toMorseString(String text) throws NullPointerException {
+        String[] words = text.split(" ");
+        StringBuilder morseBuilder = new StringBuilder();
+
+        for (int i = 0; i < words.length; i++) {
+            char[] letters = words[i].toCharArray();
+            for (int j = 0; j < letters.length; j++) {
+                if(characterMap.get(letters[j]) != null) {
+                    morseBuilder.append(characterMap.get(letters[j]));
+                } else {
+                    throw new NullPointerException("could not find character \""+letters[j]+"\" in characterMap");
+                }
+                if (j < letters.length - 1) {
+                    morseBuilder.append(" / "); // Space between letters
+                }
+            }
+            if (i < words.length - 1) {
+                morseBuilder.append(" // "); // Space between words
+            }
+        }
+
+        return morseBuilder.toString();
     }
 }
