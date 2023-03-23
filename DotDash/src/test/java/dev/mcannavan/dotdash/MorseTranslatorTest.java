@@ -57,7 +57,7 @@ class MorseTranslatorTest {
     @Test
     void toMorse_validText_returns3DArray() {
         char[][][] expectedResult = new char[][][]{{{'.', '-'}, {'-', '.', '.', '.'}}};
-        assertArrayEquals(expectedResult, morseTranslator.toMorse("AB"));
+        assertArrayEquals(expectedResult, morseTranslator.toMorseCharArray("AB"));
 
         morseTranslator = new MorseTranslator();
         morseTranslator.addMap(CharacterSet.LATIN.getCharacterSet());
@@ -77,7 +77,7 @@ class MorseTranslatorTest {
                         {'-', '-'}  // M: --
                 }
         };
-        assertArrayEquals(expectedResult2, morseTranslator.toMorse("Lorem Ipsum"));
+        assertArrayEquals(expectedResult2, morseTranslator.toMorseCharArray("Lorem Ipsum"));
     }
 
     @Test

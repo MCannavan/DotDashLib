@@ -1,7 +1,7 @@
 package dev.mcannavan.dotdash;
 
 
-public class FarnsworthTiming implements IMorseTiming {
+class FarnsworthTiming implements IMorseTiming {
 
     private float ditLengthMillis; //length of a dit (dot)
     private float dahLengthMillis; //length of a dah (dash)
@@ -66,10 +66,10 @@ public class FarnsworthTiming implements IMorseTiming {
     }
 
     public void calculateSpeedFromWpm(float fWpm, float pWpm) throws IllegalArgumentException, ArithmeticException {
-        //max ratio fWpm:pWpm is ~ 1.6129 or min pWpm:fWpm = 0.62
         if (pWpm <= 0 || fWpm <= 0) {
             throw new IllegalArgumentException("expected non-negative, non-zero values of pWpm and fWpm. Actual values: pWpm=" + pWpm + ", fWpm=" + fWpm);
-        } else if (pWpm/fWpm <= 0.62) { //reversed ratio for better accuracy
+
+        } else if (pWpm/fWpm <= 0.62) { //max ratio fWpm:pWpm is ~ 1.6129 or min pWpm:fWpm = 0.62
             throw new ArithmeticException("ratio between fWpm and pWpm above maximum ratio ~1.6129. actual: "+pWpm/fWpm);
         }
 
@@ -84,6 +84,7 @@ public class FarnsworthTiming implements IMorseTiming {
                     "\nfWpm: " + fWpm +  ", pWpm: " + pWpm +
                     "");
         }
+        calculateSpeedFromMillis(fMs, pMs);
 
         ditLengthMillis = pMs;
         dahLengthMillis = 3 * pMs;

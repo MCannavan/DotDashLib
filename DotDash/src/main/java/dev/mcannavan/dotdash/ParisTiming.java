@@ -1,6 +1,6 @@
 package dev.mcannavan.dotdash;
 
-public class ParisTiming implements IMorseTiming {
+class ParisTiming implements IMorseTiming {
     private float ditLengthMillis; // length of a dit (dot)
     private float dahLengthMillis; // length of a dah (dash)
     private float intraCharLengthMillis; // space between dits and dahs within a character

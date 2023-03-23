@@ -52,7 +52,19 @@ public class MorseTranslator {
         return containsMorse(morse);
     }
 
-    public char[][][] toMorse(String text) throws NullPointerException{
+    public boolean validateInput(String text) {
+        text = text.toUpperCase();
+        char[] characters = text.toCharArray();
+
+        for (char character : characters) {
+            if (!Character.isWhitespace(character) && !characterMap.containsKey(character)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public char[][][] toMorseCharArray(String text) throws IllegalArgumentException {
         text = text.toUpperCase();
         String[] words = text.split(" ");
         char[][][] morse = new char[words.length][][];
@@ -63,24 +75,37 @@ public class MorseTranslator {
                 if(characterMap.get(letters[j]) != null) {
                     morse[i][j] = characterMap.get(letters[j]).toCharArray();
                 } else {
-                    throw new NullPointerException("could not find character \""+letters[j]+"\" in characterMap");
+                    throw new IllegalArgumentException("could not find character \""+letters[j]+"\" in characterMap");
                 }
             }
         }
         return morse;
     }
 
-    public String toMorseString(String text) throws NullPointerException {
+    public String[][] toMorseStringArray(String text) throws IllegalArgumentException {
+        char[][][] morseCharArray = toMorseCharArray(text);
+        String[][] morseStringArray = new String[morseCharArray.length][];
+
+        for (int i = 0; i < morseCharArray.length; i++) {
+            morseStringArray[i] = new String[morseCharArray[i].length];
+            for (int j = 0; j < morseCharArray[i].length; j++) {
+                morseStringArray[i][j] = new String(morseCharArray[i][j]);
+            }
+        }
+
+        return morseStringArray;
+    }
+
+    public String toMorseString(String text) throws IllegalArgumentException {
         String[] words = text.split(" ");
         StringBuilder morseBuilder = new StringBuilder();
-
         for (int i = 0; i < words.length; i++) {
             char[] letters = words[i].toCharArray();
             for (int j = 0; j < letters.length; j++) {
                 if(characterMap.get(letters[j]) != null) {
                     morseBuilder.append(characterMap.get(letters[j]));
                 } else {
-                    throw new NullPointerException("could not find character \""+letters[j]+"\" in characterMap");
+                    throw new IllegalArgumentException("could not find character \""+letters[j]+"\" in characterMap");
                 }
                 if (j < letters.length - 1) {
                     morseBuilder.append(" / "); // Space between letters
@@ -90,7 +115,6 @@ public class MorseTranslator {
                 morseBuilder.append(" // "); // Space between words
             }
         }
-
         return morseBuilder.toString();
     }
 }
