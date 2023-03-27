@@ -57,7 +57,6 @@ public enum CharacterSet {
             punctuationCharacterSet.put('@', ".--.-.");
             punctuationCharacterSet.put('=', "-...-");
             punctuationCharacterSet.put('+', ".-.-.");
-            punctuationCharacterSet.put('*', "-..-");
             punctuationCharacterSet.put('$', "...-..-");
             return punctuationCharacterSet;
         }

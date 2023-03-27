@@ -26,7 +26,7 @@ public class MorseTimingFactory {
         return timing;
     }
 
-        public static FarnsworthTiming createFarnsworthTimingFromWpm(float fWpm, float pWpm) {
+    public static FarnsworthTiming createFarnsworthTimingFromWpm(float fWpm, float pWpm) {
         FarnsworthTiming timing = new FarnsworthTiming();
         timing.calculateSpeedFromWpm(fWpm, pWpm);
         return timing;
@@ -34,7 +34,7 @@ public class MorseTimingFactory {
 
     public static FarnsworthTiming createFarnsworthTimingFromWpm(float wpm) {
         FarnsworthTiming timing = new FarnsworthTiming();
-        timing.calculateSpeedFromWpm(wpm*0.75f, wpm); // using wpm for both pWpm and fWpm
+        timing.calculateSpeedFromWpm(wpm*0.75f, wpm); // default farnsworth is 75% of wpm
         return timing;
     }
 }

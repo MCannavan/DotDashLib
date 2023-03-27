@@ -41,13 +41,12 @@ class ParisTiming implements IMorseTiming {
         if (ms < 0) {
             throw new IllegalArgumentException("Input ms must be greater than or equal to " + 0 + ". Actual value: " + ms);
         }
-        //ms = (float) (Math.round((double) ms * 1000d) / 1000d);
         wpm = (60f * (1f / (ms / 1000f)) / 50f);
-        ditLengthMillis = ms;
-        dahLengthMillis = ms * 3;
-        interCharLengthMillis = ms * 3;
-        intraCharLengthMillis = ms;
-        interWordLengthMillis = ms * 7;
+        ditLengthMillis = Math.round(ms);
+        dahLengthMillis = Math.round(ms * 3);
+        interCharLengthMillis = Math.round(ms * 3);
+        intraCharLengthMillis = Math.round(ms);
+        interWordLengthMillis = Math.round(ms * 7);
     }
 
     public void calculateSpeedFromWpm(float wpm) throws IllegalArgumentException, ArithmeticException {

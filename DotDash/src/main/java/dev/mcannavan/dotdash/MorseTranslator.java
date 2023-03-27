@@ -29,6 +29,17 @@ public class MorseTranslator {
         return this;
     }
 
+    public MorseTranslator addMap(CharacterSet set) throws IllegalArgumentException {
+        BiMap<Character, String> temp = HashBiMap.create(characterMap);
+        try {
+            temp.putAll(set.getCharacterSet());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Exception when adding CharacterSet to characterMap", e);
+        }
+        characterMap.putAll(set.getCharacterSet());
+        return this;
+    }
+
     public MorseTranslator addPair(char key, String value) {
         characterMap.put(key, value);
         return this;

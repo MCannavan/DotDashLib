@@ -1,15 +1,14 @@
 package dev.mcannavan.dotdash;
 
-
 class FarnsworthTiming implements IMorseTiming {
 
     private float ditLengthMillis; //length of a dit (dot)
     private float dahLengthMillis; //length of a dah (dash)
-    private float intraCharLengthMillis; //space between dits and dahs within a character (in PARIS wpm / pWpm)
-    private float interCharLengthMillis; //space between characters within a word (in Farnsworth wpm / fWpm)
-    private float interWordLengthMillis; //space between words (in Farnsworth wpm /fWpm)
+    private float intraCharLengthMillis; //space between dits and dahs within a character (in PARIS ms / wMs)
+    private float interCharLengthMillis; //space between characters within a word (in Farnsworth ms / fMs)
+    private float interWordLengthMillis; //space between words (in Farnsworth ms /fMs)
     private float pWpm; // the words per minute using the PARIS approach for dit, dah, and intra-character lang, i.e. the character transmission speed
-    private float fWpm; // the words per minute using the Farnsworth approach for other spacing, i.e. the overall transmission speed
+    private float fWpm; // the words per minute using the Farnsworth approach for all other spacing, i.e. the overall transmission speed
 
     @Override
     public float getDitLength() {
@@ -61,8 +60,8 @@ class FarnsworthTiming implements IMorseTiming {
         this.pWpm = pWpm;
         this.fWpm = fWpm;
 
-        interCharLengthMillis = 3 * fMs;
-        interWordLengthMillis = 7 * fMs;
+        interCharLengthMillis = Math.round(3 * fMs);
+        interWordLengthMillis = Math.round(7 * fMs);
     }
 
     public void calculateSpeedFromWpm(float fWpm, float pWpm) throws IllegalArgumentException, ArithmeticException {
@@ -85,12 +84,5 @@ class FarnsworthTiming implements IMorseTiming {
                     "");
         }
         calculateSpeedFromMillis(fMs, pMs);
-
-        ditLengthMillis = pMs;
-        dahLengthMillis = 3 * pMs;
-        intraCharLengthMillis = pMs;
-
-        interCharLengthMillis = 3 * fMs;
-        interWordLengthMillis = 7 * fMs;
     }
 }
