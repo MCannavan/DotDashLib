@@ -65,11 +65,11 @@ public class MorsePlayer {
         }
     }
 
-    public void playTone(double duration, double cycles, double amplitude) {
+    public void playTone(double duration, double frequency, double amplitude) {
         int numSamples = (int) (duration * SAMPLE_FREQUENCY);
         byte[] buffer = new byte[2 * numSamples];
 
-        double step = 2 * Math.PI * cycles / SAMPLE_FREQUENCY;
+        double step = 2 * Math.PI * frequency / SAMPLE_FREQUENCY;
         for (int i = 0; i < numSamples; i++) {
             short sample = (short) (amplitude * Math.sin(i * step));
             buffer[2 * i] = (byte) sample;
