@@ -60,8 +60,8 @@ public class MorsePlayer {
         }
     }
 
-    public Thread playMorse(double volumepercent, String morse) {
-        double amplitude = Math.round(volumepercent/100*32767d);
+    public Thread playMorse(double volumePercent, String morse) {
+        double amplitude = Math.round(volumePercent/100*32767d);
         Thread t = new Thread(() -> {
             try {
                 openLine();
@@ -140,18 +140,13 @@ public class MorsePlayer {
         private IMorseTiming timing;
         private double frequency;
 
-        private MorsePlayerBuilder() {
-        }
-
-        public static MorsePlayerBuilder aMorsePlayer() {
-            MorsePlayerBuilder temp = new MorsePlayerBuilder();
-            temp.translator = new MorseTranslator()
+        public MorsePlayerBuilder() {
+            this.translator = new MorseTranslator()
                     .addMap(CharacterSet.LATIN)
                     .addMap(CharacterSet.PUNCTUATION)
                     .addMap(CharacterSet.ARABIC_NUMERALS);
-            temp.timing = MorseTimingFactory.createParisTimingFromWpm(20);
-            temp.frequency = 700;
-            return temp;
+            this.timing = MorseTimingFactory.createParisTimingFromWpm(20);
+            this.frequency = 700;
         }
 
         public MorsePlayerBuilder withTranslator(MorseTranslator translator) {
