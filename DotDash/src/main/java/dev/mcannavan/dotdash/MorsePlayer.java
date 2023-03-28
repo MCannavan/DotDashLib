@@ -11,7 +11,7 @@ public class MorsePlayer {
     private IMorseTiming timing;
     private double frequency = 700;
 
-    public MorsePlayer() {
+    private MorsePlayer() {
         try {
             line = AudioSystem.getSourceDataLine(new AudioFormat(
                     SAMPLE_FREQUENCY, 16,
@@ -19,30 +19,6 @@ public class MorsePlayer {
         } catch (LineUnavailableException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    public MorseTranslator getTranslator() {
-        return translator;
-    }
-
-    public void setTranslator(MorseTranslator translator) {
-        this.translator = translator;
-    }
-
-    public IMorseTiming getTiming() {
-        return timing;
-    }
-
-    public void setTiming(IMorseTiming timing) {
-        this.timing = timing;
-    }
-
-    public double getFrequency() {
-        return frequency;
-    }
-
-    public void setFrequency(double frequency) {
-        this.frequency = frequency;
     }
 
     public boolean openLine() throws LineUnavailableException {
@@ -84,7 +60,8 @@ public class MorsePlayer {
         }
     }
 
-    public void playMorse(String morse) {
+    public Thread playMorse(double volumepercent, String morse) {
+        double amplitude = Math.round(volumepercent/100*32767d);
         Thread t = new Thread(() -> {
             try {
                 openLine();
@@ -96,10 +73,10 @@ public class MorsePlayer {
                                 //System.out.print(phrase[i][j][k]);
                                 switch (phrase[i][j][k]) {
                                     case '-':
-                                        playTone(timing.getDahLength() / 1000d, frequency, 32767d);
+                                        playTone(timing.getDahLength() / 1000d, frequency, amplitude);
                                         break;
                                     case '.':
-                                        playTone(timing.getDitLength() / 1000d, frequency, 32767d);
+                                        playTone(timing.getDitLength() / 1000d, frequency, amplitude);
                                         break;
                                 }
                                 if (k < phrase[i][j].length - 1) {
@@ -131,6 +108,73 @@ public class MorsePlayer {
             }
         });
         t.start();
+        return t;
     }
 
+    public MorseTranslator getTranslator() {
+        return translator;
+    }
+
+    public void setTranslator(MorseTranslator translator) {
+        this.translator = translator;
+    }
+
+    public IMorseTiming getTiming() {
+        return timing;
+    }
+
+    public void setTiming(IMorseTiming timing) {
+        this.timing = timing;
+    }
+
+    public double getFrequency() {
+        return frequency;
+    }
+
+    public void setFrequency(double frequency) {
+        this.frequency = frequency;
+    }
+
+    public static final class MorsePlayerBuilder {
+        private MorseTranslator translator;
+        private IMorseTiming timing;
+        private double frequency;
+
+        private MorsePlayerBuilder() {
+        }
+
+        public static MorsePlayerBuilder aMorsePlayer() {
+            MorsePlayerBuilder temp = new MorsePlayerBuilder();
+            temp.translator = new MorseTranslator()
+                    .addMap(CharacterSet.LATIN)
+                    .addMap(CharacterSet.PUNCTUATION)
+                    .addMap(CharacterSet.ARABIC_NUMERALS);
+            temp.timing = MorseTimingFactory.createParisTimingFromWpm(20);
+            temp.frequency = 700;
+            return temp;
+        }
+
+        public MorsePlayerBuilder withTranslator(MorseTranslator translator) {
+            this.translator = translator;
+            return this;
+        }
+
+        public MorsePlayerBuilder withTiming(IMorseTiming timing) {
+            this.timing = timing;
+            return this;
+        }
+
+        public MorsePlayerBuilder withFrequency(double frequency) {
+            this.frequency = frequency;
+            return this;
+        }
+
+        public MorsePlayer build() {
+            MorsePlayer morsePlayer = new MorsePlayer();
+            morsePlayer.setTranslator(translator);
+            morsePlayer.setTiming(timing);
+            morsePlayer.setFrequency(frequency);
+            return morsePlayer;
+        }
+    }
 }
