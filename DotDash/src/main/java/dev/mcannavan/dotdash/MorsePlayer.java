@@ -140,18 +140,13 @@ public class MorsePlayer {
         private IMorseTiming timing;
         private double frequency;
 
-        private MorsePlayerBuilder() {
-        }
-
-        public static MorsePlayerBuilder aMorsePlayer() {
-            MorsePlayerBuilder temp = new MorsePlayerBuilder();
-            temp.translator = new MorseTranslator()
+        public MorsePlayerBuilder() {
+            this.translator = new MorseTranslator()
                     .addMap(CharacterSet.LATIN)
                     .addMap(CharacterSet.PUNCTUATION)
                     .addMap(CharacterSet.ARABIC_NUMERALS);
-            temp.timing = MorseTimingFactory.createParisTimingFromWpm(20);
-            temp.frequency = 700;
-            return temp;
+            this.timing = MorseTimingFactory.createParisTimingFromWpm(20);
+            this.frequency = 700;
         }
 
         public MorsePlayerBuilder withTranslator(MorseTranslator translator) {
