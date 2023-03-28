@@ -2,6 +2,7 @@ package dev.mcannavan.dotdash;
 
 import javax.sound.sampled.*;
 
+//TODO Add factory class for creating morse players
 public class MorsePlayer {
 
     private static final float SAMPLE_FREQUENCY = 44100;
@@ -89,9 +90,10 @@ public class MorsePlayer {
                 openLine();
                 if (translator.validateInput(morse)) {
                     char[][][] phrase = translator.toMorseCharArray(morse);
-                    for (int i = 0; i < phrase.length; i++) {
-                        for (int j = 0; j < phrase[i].length; j++) {
-                            for (int k = 0; k < phrase[i][j].length; k++) {
+                    for (int i = 0; i < phrase.length; i++) { //for each word
+                        for (int j = 0; j < phrase[i].length; j++) { //for each letter
+                            for (int k = 0; k < phrase[i][j].length; k++) { //for each symbol
+                                //System.out.print(phrase[i][j][k]);
                                 switch (phrase[i][j][k]) {
                                     case '-':
                                         playTone(timing.getDahLength() / 1000d, frequency, 32767d);
@@ -103,16 +105,22 @@ public class MorsePlayer {
                                 if (k < phrase[i][j].length - 1) {
                                     Thread.sleep(Math.round(timing.getIntraCharLength()));
                                 }
-                            }
+                            } //end for each symbol
 
                             if (j < phrase[i].length - 1) {
+                                //System.out.print(" / ");
                                 Thread.sleep(Math.round(timing.getInterCharLength()));
                             }
-                        }
+                        } //end for each letter
                         if (i < phrase.length - 1) {
+                            //System.out.print(" // ");
+                            Thread.sleep(Math.round(timing.getInterWordLength()));
+                        } else {
+                            // For some reason, opening the project has a chance to cause the last tone to be cut off
+                            // This is a workaround until the actual cause can be found
                             Thread.sleep(Math.round(timing.getInterWordLength()));
                         }
-                    }
+                    } //end for each word
                 } else {
                     System.out.println("Failed to validate input");
                 }

@@ -3,7 +3,13 @@ package dev.mcannavan.dotdash;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 
+/**
+ * A set of default character sets.
+ */
 public enum CharacterSet {
+    /**
+     * The Latin Alphabet A-Z
+     */
     LATIN {
         @Override
         public BiMap<Character, String> getCharacterSet() {
@@ -37,6 +43,9 @@ public enum CharacterSet {
             return latinCharacterSet;
         }
     },
+    /**
+     * The set of all standardised punctuation marks.
+     */
     PUNCTUATION {
         @Override
         public BiMap<Character, String> getCharacterSet() {
@@ -61,6 +70,9 @@ public enum CharacterSet {
             return punctuationCharacterSet;
         }
     },
+    /**
+     * The set of all  Arabic numerals 0-9.
+     */
     ARABIC_NUMERALS {
         @Override
         public BiMap<Character, String> getCharacterSet() {
@@ -79,5 +91,10 @@ public enum CharacterSet {
         }
     };
 
+    /**
+     * Gets the character set.
+     *
+     * @return the character set
+     */
     public abstract BiMap<Character, String> getCharacterSet();
 }
