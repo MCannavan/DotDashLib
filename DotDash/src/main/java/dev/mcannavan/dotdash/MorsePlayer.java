@@ -77,7 +77,6 @@ public class MorsePlayer {
             return false;
         }
     }
-
     /* original playTone method, kept for reference
     public void playTone(double duration, double frequency, double amplitude) {
         int numSamples = (int) (duration * SAMPLE_FREQUENCY);

@@ -18,7 +18,6 @@ public class MorsePlayerTest {
         System.out.println(player.getTiming().getInterWordLength());
 
         String temp = "SOS SOS SOS";
-
         player.playMorse(100, temp);
 
     }
