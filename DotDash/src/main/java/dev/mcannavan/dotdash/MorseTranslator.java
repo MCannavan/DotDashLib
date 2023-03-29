@@ -97,7 +97,7 @@ public class MorseTranslator {
      */
     public MorseTranslator replacePair(char key, String value) throws IllegalArgumentException {
         if (characterMap.containsValue(value)) {
-            throw new IllegalArgumentException("The value \""+value+"\" already exists in the map for key \'"+characterMap.inverse().get(value)+"\'.");
+            throw new IllegalArgumentException("The value \""+value+ "\" already exists in the map for key '" +characterMap.inverse().get(value)+"'.");
         } else {
             characterMap.replace(key, value);
         }
@@ -230,6 +230,7 @@ public class MorseTranslator {
      * @throws IllegalArgumentException if the input contains a character that is not in the character map
      */
     public String toMorseString(String text) throws IllegalArgumentException {
+        text = text.toUpperCase();
         String[] words = text.split(" ");
         StringBuilder morseBuilder = new StringBuilder();
         for (int i = 0; i < words.length; i++) {

@@ -243,8 +243,8 @@ public class MorsePlayer {
 
     /**
      * The builder pattern for new instances of {@link MorsePlayer}
-     *
-     * <br> <br> These are the attributes that can be set:
+     * <br>
+     * <br> These are the attributes that can be set:
      * <ul>
      *     <li>{@link #setTranslator(MorseTranslator) MorseTranslator}</li>
      *     <li>{@link #setTiming(IMorseTiming) IMorseTiming}</li>
@@ -258,7 +258,7 @@ public class MorsePlayer {
      *     {@link CharacterSet#PUNCTUATION PUNCTUATION},
      *     and {@link CharacterSet#ARABIC_NUMERALS ARABIC_NUMERALS}
      *     </li>
-     *     <li> {@link IMorseTiming} - a {@link ParisTiming} with a speed of {@link MorseTimingFactory#createParisTimingFromWpm(float 20) 20 wpm}</li>
+     *     <li> {@link IMorseTiming} - a {@link ParisTiming} with a speed of {@link MorseTimingFactory#createParisTimingFromWpm(float) 20 wpm}</li>
      *     <li> Frequency - {@code 700}</li>
      *
      * </ul>
