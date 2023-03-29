@@ -3,9 +3,9 @@ package dev.mcannavan.dotdash;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableBiMap;
-
 import java.util.Map;
 
+//TODO add builder pattern
 /**
  * A class for translating morse code to and from characters.
  */
@@ -168,11 +168,12 @@ public class MorseTranslator {
 
     /**
      * Converts the input text to a {@code char[][][]} of morse code symbols.
-     * <br> - The first dimension of the array represents the words in the input text
-     * <br> - The second dimension of the array represents the character in each word
-     * <br> - The third dimension of the array represents the Morse code symbols in each character
-     * <br>
-     * <br> The {@link #validateInput} method can be used to avoid throwing an {@code IllegalArgumentException}
+     * <ul>
+     *     <li>The first dimension of the array represents the words in the input text</li>
+     *     <li>The second dimension of the array represents the characters in each word</li>
+     *     <li>The third dimension of the array represents the morse code symbols in each character</li>
+     * </ul>
+     * <br> The {@link #validateInput} method can be used before calling {@code toMorseCharArray} to avoid throwing an {@code IllegalArgumentException}
      *
      * @param text the text to be converted, as a {@code String}
      * @return a {@code char[][][]} of Morse code symbols
@@ -198,9 +199,10 @@ public class MorseTranslator {
 
     /**
      * Converts the input text to a {@code String[][]} of morse code .
-     * <br> - The first dimension of the array represents the words in the input text
-     * <br> - The second dimension of the array represents the characters in each word as a string of morse symbols
-     * <br>
+     * <ul>
+     *     <li>The first dimension of the array represents the words in the input text</li>
+     *     <li>The second dimension of the array represents the characters in each word as a string of morse symbols</li>
+     * </ul>
      * <br> The {@link #validateInput} method can be used to avoid throwing an {@code IllegalArgumentException}
      * @param text the text to be converted, as a {@code String}
      * @return a {@code String[][]} of Morse code
