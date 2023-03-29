@@ -1,32 +1,20 @@
 package dev.mcannavan.dotdash;
 
+import java.util.concurrent.TimeUnit;
+
 public class MorsePlayerTest {
 
     public static void main(String[] args) {
 
         MorsePlayer player = new MorsePlayer
                 .MorsePlayerBuilder()
-                .withTiming(MorseTimingFactory.createParisTimingFromWpm(20))
-                .withFrequency(500)
+                .withTiming(MorseTimingFactory.createParisTimingFromWpm(1))
+                .withFrequency(700)
                 .build();
 
-        String temp = "SOS SOS SOS";
-        MorseTranslator translator = player.getTranslator();
-        System.out.println(translator.validateInput(temp));
-        try {
-            System.out.println(translator.toMorseString(temp));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        String temp = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
 
-        Thread thread = player.playMorse(100, temp);
-        while (thread.isAlive()) {
-            try {
-                Thread.sleep(10);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-        player.playMorse(100, temp.toString());
+        player.playMorse(100, temp);
+
     }
 }
