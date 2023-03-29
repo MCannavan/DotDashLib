@@ -1,6 +1,9 @@
 package dev.mcannavan.dotdash;
 
 import javax.sound.sampled.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * The type Morse player.
@@ -15,6 +18,8 @@ public class MorsePlayer {
      * The Line.
      */
     private final SourceDataLine line;
+
+    private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
     /**
      * The Translator.
      */
@@ -101,8 +106,8 @@ public class MorsePlayer {
      * @param amplitude the amplitude of the tone, as a {@code double}
      */
     private void playTone(double duration, double frequency, double amplitude) {
-        final double FADE_IN_DURATION = duration * 0.02; // 1.5% fade-in
-        final double FADE_OUT_DURATION = duration * 0.05; // 5% fade-out
+        final double FADE_IN_DURATION = duration * 0.05;
+        final double FADE_OUT_DURATION = duration * 0.055;
         int numSamples = (int) (duration * SAMPLE_FREQUENCY);
         byte[] buffer = new byte[2 * numSamples];
 
@@ -118,73 +123,62 @@ public class MorsePlayer {
             buffer[2 * i] = (byte) sample;
             buffer[2 * i + 1] = (byte) (sample >> 8);
         }
-        line.write(buffer, 0, buffer.length);
-        try {
-            Thread.sleep(Math.round(duration * 1000));
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+        System.out.println("Writing tone at " + System.currentTimeMillis());
+
+                line.write(buffer, 0, buffer.length);
+
     }
 
 
     /**
-     * Translates and plays text as morse code at the specified volume and returns the {@code Thread} that plays the morse.
+     * Translates and schedules the playing of the text as morse code at the specified volume
      *
      * @param volumePercent the volume percent (0-100) to play the morse at, as a {@code double}
      * @param morse the text to be played as morse, as a {@code String}
-     * @return a {@code Thread} that is playing the morse
      * @throws IllegalArgumentException if the text contains invalid characters for the current {@code MorseTranslator}
      */
-    public Thread playMorse(double volumePercent, String morse) throws IllegalArgumentException{
+    public void playMorse(double volumePercent, String morse) throws IllegalArgumentException{
         double amplitude = Math.round(volumePercent/100*32767d);
-        Thread t = new Thread(() -> {
-            try {
-                openLine();
-                if (translator.validateInput(morse)) {
-                    char[][][] phrase = translator.toMorseCharArray(morse);
-                    for (int i = 0; i < phrase.length; i++) { //for each word
-                        for (int j = 0; j < phrase[i].length; j++) { //for each letter
-                            for (int k = 0; k < phrase[i][j].length; k++) { //for each symbol
-                                //System.out.print(phrase[i][j][k]);
-                                switch (phrase[i][j][k]) {
-                                    case '-':
-                                        playTone(timing.getDahLength() / 1000d, frequency, amplitude);
-                                        break;
-                                    case '.':
-                                        playTone(timing.getDitLength() / 1000d, frequency, amplitude);
-                                        break;
-                                }
-                                if (k < phrase[i][j].length - 1) {
-                                    Thread.sleep(Math.round(timing.getIntraCharLength()));
-                                }
-                            } //end for each symbol
+        int delayTotal = 0;
+        try {
+            openLine();
+            if (translator.validateInput(morse)) {
+                char[][][] phrase = translator.toMorseCharArray(morse);
+                for (int i = 0; i < phrase.length; i++) { //for each word
+                    for (int j = 0; j < phrase[i].length; j++) { //for each letter
+                        for (int k = 0; k < phrase[i][j].length; k++) { //for each symbol
+                            switch (phrase[i][j][k]) {
+                                case '-':
+                                    executor.schedule(() -> playTone(timing.getDahLength() / 1000d, frequency, amplitude), delayTotal, TimeUnit.MILLISECONDS);
+                                    System.out.println("Scheduled dah for delay " + delayTotal + "ms, at " + (System.currentTimeMillis()+delayTotal));
 
-                            if (j < phrase[i].length - 1) {
-                                //System.out.print(" / ");
-                                Thread.sleep(Math.round(timing.getInterCharLength()));
+                                    delayTotal += timing.getDahLength();
+                                    break;
+                                case '.':
+                                    executor.schedule(() -> playTone(timing.getDitLength() / 1000d, frequency, amplitude), delayTotal, TimeUnit.MILLISECONDS);
+                                    System.out.println("Scheduled dah for delay " + delayTotal + "ms, at " + (System.currentTimeMillis()+delayTotal));
+                                    delayTotal += timing.getDitLength();
+                                    break;
                             }
-                        } //end for each letter
-                        if (i < phrase.length - 1) {
-                            //System.out.print(" // ");
-                            Thread.sleep(Math.round(timing.getInterWordLength()));
-                        } else {
-                            // For some reason, opening the project has a chance to cause the last tone to be cut-off
-                            // line.drain() should block until the line is done playing, but it doesn't seem to work
-                            // This is a workaround until the actual cause can be found
-                            Thread.sleep(Math.round(timing.getInterWordLength()));
+                            if (k < phrase[i][j].length - 1) {
+                                delayTotal += timing.getIntraCharLength();
+                            }
+                        } //end for each symbol
+                        if (j < phrase[i].length - 1) {
+                            delayTotal += timing.getInterCharLength();
                         }
-                    } //end for each word
-                } else {
-                    throw new IllegalArgumentException("Invalid morse code");
-                }
-            } catch (InterruptedException | LineUnavailableException e) {
-                e.printStackTrace();
-            } finally {
-                closeLine();
+                    } //end for each letter
+                    delayTotal += timing.getInterWordLength();
+                } //end for each word
+            } else {
+                throw new IllegalArgumentException("Invalid morse code");
             }
-        });
-        t.start();
-        return t;
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            executor.schedule(this::closeLine, delayTotal, TimeUnit.MILLISECONDS);
+            System.out.println("Scheduled dah for delay " + delayTotal + "ms, at " + (System.currentTimeMillis()+delayTotal));
+        }
     }
 
     /**
