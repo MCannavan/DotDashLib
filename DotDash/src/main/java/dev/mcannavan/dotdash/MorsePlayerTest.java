@@ -1,8 +1,5 @@
 package dev.mcannavan.dotdash;
 
-import java.sql.SQLOutput;
-import java.util.Arrays;
-
 public class MorsePlayerTest {
 
     public static void main(String[] args) {
