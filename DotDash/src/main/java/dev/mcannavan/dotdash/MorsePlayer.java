@@ -69,15 +69,13 @@ public class MorsePlayer {
 
         double step = 2 * Math.PI * frequency / SAMPLE_FREQUENCY;
         for (int i = 0; i < numSamples; i++) {
-            double fadeIn = 1.0;
-            if (i < FADE_IN_DURATION * SAMPLE_FREQUENCY) {
-                fadeIn = i / (FADE_IN_DURATION * SAMPLE_FREQUENCY);
+            double fade = 1.0;
+            if (i < FADE_IN_DURATION * SAMPLE_FREQUENCY) { // fade-in if earlier than fade-in duration
+                fade = i / (FADE_IN_DURATION * SAMPLE_FREQUENCY);
+            } else if (i > numSamples - (FADE_OUT_DURATION * SAMPLE_FREQUENCY)) { // fade-out if later than fade-out duration
+                fade = 1.0 - ((i - (numSamples - (FADE_OUT_DURATION * SAMPLE_FREQUENCY))) / (FADE_OUT_DURATION * SAMPLE_FREQUENCY));
             }
-            double fadeOut = 1.0;
-            if (i > numSamples - (FADE_OUT_DURATION * SAMPLE_FREQUENCY)) {
-                fadeOut = 1.0 - ((i - (numSamples - (FADE_OUT_DURATION * SAMPLE_FREQUENCY))) / (FADE_OUT_DURATION * SAMPLE_FREQUENCY));
-            }
-            short sample = (short) (amplitude * Math.sin(i * step) * fadeIn * fadeOut);
+            short sample = (short) (amplitude * Math.sin(i * step) * fade);
             buffer[2 * i] = (byte) sample;
             buffer[2 * i + 1] = (byte) (sample >> 8);
         }
