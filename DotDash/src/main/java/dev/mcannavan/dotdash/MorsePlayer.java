@@ -2,7 +2,6 @@ package dev.mcannavan.dotdash;
 
 import javax.sound.sampled.*;
 
-//TODO Add factory class for creating morse players
 public class MorsePlayer {
 
     private static final float SAMPLE_FREQUENCY = 44100;
@@ -42,6 +41,7 @@ public class MorsePlayer {
         }
     }
 
+    /* original playTone method, kept for reference
     public void playTone(double duration, double frequency, double amplitude) {
         int numSamples = (int) (duration * SAMPLE_FREQUENCY);
         byte[] buffer = new byte[2 * numSamples];
@@ -59,6 +59,39 @@ public class MorsePlayer {
             throw new RuntimeException(e);
         }
     }
+     */
+
+    public void playTone(double duration, double frequency, double amplitude) {
+        final double FADE_IN_DURATION = duration * 0.015; // 1.5% fade-in
+        final double FADE_OUT_DURATION = duration * 0.05; // 5% fade-out
+        int numSamples = (int) (duration * SAMPLE_FREQUENCY);
+        byte[] buffer = new byte[2 * numSamples];
+
+        double step = 2 * Math.PI * frequency / SAMPLE_FREQUENCY;
+        for (int i = 0; i < numSamples; i++) {
+            double fadeIn = 1.0;
+            if (i < FADE_IN_DURATION * SAMPLE_FREQUENCY) {
+                fadeIn = i / (FADE_IN_DURATION * SAMPLE_FREQUENCY);
+            }
+            double fadeOut = 1.0;
+            if (i > numSamples - (FADE_OUT_DURATION * SAMPLE_FREQUENCY)) {
+                fadeOut = 1.0 - ((i - (numSamples - (FADE_OUT_DURATION * SAMPLE_FREQUENCY))) / (FADE_OUT_DURATION * SAMPLE_FREQUENCY));
+            }
+            short sample = (short) (amplitude * Math.sin(i * step) * fadeIn * fadeOut);
+            buffer[2 * i] = (byte) sample;
+            buffer[2 * i + 1] = (byte) (sample >> 8);
+        }
+        line.write(buffer, 0, buffer.length);
+        try {
+            Thread.sleep(Math.round(duration * 1000));
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+
+
+
 
     public Thread playMorse(double volumePercent, String morse) {
         double amplitude = Math.round(volumePercent/100*32767d);
@@ -93,7 +126,8 @@ public class MorsePlayer {
                             //System.out.print(" // ");
                             Thread.sleep(Math.round(timing.getInterWordLength()));
                         } else {
-                            // For some reason, opening the project has a chance to cause the last tone to be cut off
+                            // For some reason, opening the project has a chance to cause the last tone to be cut-off
+                            // line.drain() should block until the line is done playing, but it doesn't seem to work
                             // This is a workaround until the actual cause can be found
                             Thread.sleep(Math.round(timing.getInterWordLength()));
                         }
