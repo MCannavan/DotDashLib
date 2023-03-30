@@ -77,7 +77,6 @@ public class MorsePlayer {
             return false;
         }
     }
-
     /* original playTone method, kept for reference
     public void playTone(double duration, double frequency, double amplitude) {
         int numSamples = (int) (duration * SAMPLE_FREQUENCY);
@@ -123,7 +122,9 @@ public class MorsePlayer {
             buffer[2 * i] = (byte) sample;
             buffer[2 * i + 1] = (byte) (sample >> 8);
         }
-        line.write(buffer, 0, buffer.length);
+        System.out.println("Writing tone at " + System.currentTimeMillis());
+
+                line.write(buffer, 0, buffer.length);
 
     }
 
@@ -148,10 +149,13 @@ public class MorsePlayer {
                             switch (phrase[i][j][k]) {
                                 case '-':
                                     executor.schedule(() -> playTone(timing.getDahLength() / 1000d, frequency, amplitude), delayTotal, TimeUnit.MILLISECONDS);
+                                    System.out.println("Scheduled dah for delay " + delayTotal + "ms, at " + (System.currentTimeMillis()+delayTotal));
+
                                     delayTotal += timing.getDahLength();
                                     break;
                                 case '.':
                                     executor.schedule(() -> playTone(timing.getDitLength() / 1000d, frequency, amplitude), delayTotal, TimeUnit.MILLISECONDS);
+                                    System.out.println("Scheduled dah for delay " + delayTotal + "ms, at " + (System.currentTimeMillis()+delayTotal));
                                     delayTotal += timing.getDitLength();
                                     break;
                             }
@@ -171,8 +175,8 @@ public class MorsePlayer {
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            System.out.println("Delay total: " + delayTotal);
             executor.schedule(this::closeLine, delayTotal, TimeUnit.MILLISECONDS);
+            System.out.println("Scheduled dah for delay " + delayTotal + "ms, at " + (System.currentTimeMillis()+delayTotal));
         }
     }
 

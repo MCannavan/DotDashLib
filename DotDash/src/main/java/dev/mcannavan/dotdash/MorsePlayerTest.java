@@ -8,12 +8,16 @@ public class MorsePlayerTest {
 
         MorsePlayer player = new MorsePlayer
                 .MorsePlayerBuilder()
-                .withTiming(MorseTimingFactory.createParisTimingFromWpm(1))
+                .withTiming(MorseTimingFactory.createParisTimingFromWpm(20))
                 .withFrequency(700)
                 .build();
+        System.out.println(player.getTiming().getDahLength());
+        System.out.println(player.getTiming().getDitLength());
+        System.out.println(player.getTiming().getIntraCharLength());
+        System.out.println(player.getTiming().getInterCharLength());
+        System.out.println(player.getTiming().getInterWordLength());
 
-        String temp = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
-
+        String temp = "SOS SOS SOS";
         player.playMorse(100, temp);
 
     }
