@@ -1,41 +1,25 @@
 package dev.mcannavan.dotdash;
 
-import javax.sound.sampled.*;
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.LineUnavailableException;
+import javax.sound.sampled.SourceDataLine;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-/**
- * The type Morse player.
- */
 public class MorsePlayer {
 
-    /**
-     * The constant SAMPLE_FREQUENCY.
-     */
     private static final float SAMPLE_FREQUENCY = 44100;
-    /**
-     * The Line.
-     */
     private final SourceDataLine line;
-
+    //private final TimeTable timeTable = new TimeTable("MorseEpochs");
     private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-    /**
-     * The Translator.
-     */
     private MorseTranslator translator;
-    /**
-     * The Timing.
-     */
     private IMorseTiming timing;
-    /**
-     * The Frequency.
-     */
     private double frequency = 700;
 
-    /**
-     * Instantiates a new Morse player.
-     */
+    private InterruptBehavior interruptBehavior = InterruptBehavior.NONE;
+
     private MorsePlayer() {
         try {
             line = AudioSystem.getSourceDataLine(new AudioFormat(
@@ -46,12 +30,6 @@ public class MorsePlayer {
         }
     }
 
-    /**
-     * Opens and starts the {@code SourceDataLine} if possible and returns a boolean representing the success of the operation.
-     *
-     * @return true if the line was successfully opened and started, false if the line was already open
-     * @throws LineUnavailableException if the line is unavailable
-     */
     private boolean openLine() throws LineUnavailableException {
         if (!line.isOpen()) {
             line.open();
@@ -62,18 +40,12 @@ public class MorsePlayer {
         }
     }
 
-    /**
-     * Closes the {@code SourceDataLine} and returns a boolean representing the success of the operation.
-     *
-     * @return true if the line was successfully closed, false if the line was already closed
-     */
     private boolean closeLine() {
         if (line.isOpen()) {
             line.drain();
             line.close();
             return true;
         } else {
-            //System.out.println("line is not open");
             return false;
         }
     }
@@ -97,13 +69,6 @@ public class MorsePlayer {
     }
      */
 
-    /**
-     * plays a sinusoidal (pure) tone of the specified frequency and amplitude for the specified duration, with a short fade-in and fade-out
-     *
-     * @param duration the duration in seconds, as a {@code double}
-     * @param frequency the frequency of the tone in Hertz, as a {@code double}
-     * @param amplitude the amplitude of the tone, as a {@code double}
-     */
     private void playTone(double duration, double frequency, double amplitude) {
         final double FADE_IN_DURATION = duration * 0.05;
         final double FADE_OUT_DURATION = duration * 0.055;
@@ -122,41 +87,39 @@ public class MorsePlayer {
             buffer[2 * i] = (byte) sample;
             buffer[2 * i + 1] = (byte) (sample >> 8);
         }
-        System.out.println("Writing tone at " + System.currentTimeMillis());
-
-                line.write(buffer, 0, buffer.length);
-
+        //long actualTime = System.currentTimeMillis();
+        //timeTable.addRecord(expectedTime, actualTime);
+        line.write(buffer, 0, buffer.length);
     }
 
+    public void playMorse(double volumePercent, String morse) {
+        playMorse(volumePercent, 0, morse);
+    }
 
-    /**
-     * Translates and schedules the playing of the text as morse code at the specified volume
-     *
-     * @param volumePercent the volume percent (0-100) to play the morse at, as a {@code double}
-     * @param morse the text to be played as morse, as a {@code String}
-     * @throws IllegalArgumentException if the text contains invalid characters for the current {@code MorseTranslator}
-     */
-    public void playMorse(double volumePercent, String morse) throws IllegalArgumentException{
+    public void playMorse(double volumePercent, int initialDelay, String morse) throws IllegalArgumentException{
         double amplitude = Math.round(volumePercent/100*32767d);
-        int delayTotal = 0;
+        int delayTotal = initialDelay;
+        String toPlay = morse;
+        boolean longText = false;
+        if (morse.length() > 100) {
+            longText = true;
+            toPlay = morse.substring(0, 100);
+            morse = morse.substring(100);
+        }
         try {
             openLine();
             if (translator.validateInput(morse)) {
-                char[][][] phrase = translator.toMorseCharArray(morse);
+                char[][][] phrase = translator.toMorseCharArray(toPlay);
                 for (int i = 0; i < phrase.length; i++) { //for each word
                     for (int j = 0; j < phrase[i].length; j++) { //for each letter
                         for (int k = 0; k < phrase[i][j].length; k++) { //for each symbol
                             switch (phrase[i][j][k]) {
                                 case '-':
                                     executor.schedule(() -> playTone(timing.getDahLength() / 1000d, frequency, amplitude), delayTotal, TimeUnit.MILLISECONDS);
-                                    System.out.println("Scheduled dah for delay " + delayTotal + "ms, at " + (System.currentTimeMillis()+delayTotal));
-
                                     delayTotal += timing.getDahLength();
                                     break;
                                 case '.':
-                                    executor.schedule(() -> playTone(timing.getDitLength() / 1000d, frequency, amplitude), delayTotal, TimeUnit.MILLISECONDS);
-                                    System.out.println("Scheduled dah for delay " + delayTotal + "ms, at " + (System.currentTimeMillis()+delayTotal));
-                                    delayTotal += timing.getDitLength();
+                                    executor.schedule(() -> playTone(timing.getDitLength() / 1000d, frequency, amplitude), delayTotal, TimeUnit.MILLISECONDS);delayTotal += timing.getDitLength();
                                     break;
                             }
                             if (k < phrase[i][j].length - 1) {
@@ -169,110 +132,144 @@ public class MorsePlayer {
                     } //end for each letter
                     delayTotal += timing.getInterWordLength();
                 } //end for each word
+
             } else {
                 throw new IllegalArgumentException("Invalid morse code");
             }
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            executor.schedule(this::closeLine, delayTotal, TimeUnit.MILLISECONDS);
-            System.out.println("Scheduled dah for delay " + delayTotal + "ms, at " + (System.currentTimeMillis()+delayTotal));
+            if (!longText) {
+                executor.schedule(this::closeLine, delayTotal, TimeUnit.MILLISECONDS);
+            } else {
+                playMorse(volumePercent, delayTotal, morse);
+            }
         }
     }
 
-    /**
-     * Gets the {@link MorseTranslator}.
-     *
-     * @return the {@code MorseTranslator}
-     */
+    /*
+    private void playMorseRecursive(double volumePercent, char[][][] phrase, int wordIndex, int letterIndex, int symbolIndex, long delay) {
+        try {
+            openLine();
+        } catch (LineUnavailableException e) {
+            throw new RuntimeException(e);
+        }
+
+        if (wordIndex >= phrase.length) {
+            executor.schedule(this::closeLine, delay, TimeUnit.MILLISECONDS);
+            return;
+        }
+
+        if (letterIndex >= phrase[wordIndex].length) {
+            delay += timing.getInterWordLength();
+            playMorseRecursive(volumePercent, phrase, wordIndex + 1, 0, 0, delay);
+            return;
+        }
+
+        if (symbolIndex >= phrase[wordIndex][letterIndex].length) {
+            delay += timing.getInterCharLength();
+            playMorseRecursive(volumePercent, phrase, wordIndex, letterIndex + 1, 0, delay);
+            return;
+        }
+
+        char symbol = phrase[wordIndex][letterIndex][symbolIndex];
+        double duration = 0;
+
+        switch (symbol) {
+            case '-':
+                duration = timing.getDahLength() / 1000d;
+                break;
+            case '.':
+                duration = timing.getDitLength() / 1000d;
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid morse code");
+        }
+
+        double amplitude = Math.round(volumePercent / 100 * 32767d);
+        long expectedTime = System.currentTimeMillis() + delay;
+
+        double finalDuration = duration;
+        executor.schedule(() -> {
+            playTone(finalDuration, frequency, amplitude, expectedTime);
+            long nextDelay = (long) ((long) (finalDuration * 1000) + timing.getIntraCharLength());
+            playMorseRecursive(volumePercent, phrase, wordIndex, letterIndex, symbolIndex + 1, nextDelay);
+        }, delay, TimeUnit.MILLISECONDS);
+    }
+    */
+
     public MorseTranslator getTranslator() {
         return translator;
     }
 
-    /**
-     * Sets the {@link MorseTranslator}.
-     *
-     * @param translator the {@code MorseTranslator} to be used
-     */
     public void setTranslator(MorseTranslator translator) {
         this.translator = translator;
     }
 
-    /**
-     * Gets the {@link IMorseTiming}.
-     *
-     * @return the {@code IMorseTiming}
-     */
     public IMorseTiming getTiming() {
         return timing;
     }
 
-    /**
-     * Sets the {@link IMorseTiming}.
-     *
-         * @param timing the {@code IMorseTiming} to be used
-     */
     public void setTiming(IMorseTiming timing) {
         this.timing = timing;
     }
 
-    /**
-     * Gets the frequency which morse is played at.
-     *
-     * @return the frequency, as a {@code double}
-     */
     public double getFrequency() {
         return frequency;
     }
 
-    /**
-     * Sets the frequency which morse is played at.
-     *
-     * @param frequency the frequency to be used, as a {@code double}
-     */
     public void setFrequency(double frequency) {
         this.frequency = frequency;
     }
 
-    /**
-     * The builder pattern for new instances of {@link MorsePlayer}
-     * <br>
-     * <br> These are the attributes that can be set:
-     * <ul>
-     *     <li>{@link #setTranslator(MorseTranslator) MorseTranslator}</li>
-     *     <li>{@link #setTiming(IMorseTiming) IMorseTiming}</li>
-     *     <li>{@code double} Frequency </li>
-     * </ul>
-     *
-     * With defaults:
-     * <ul>
-     *     <li> {@link MorseTranslator} - a {@code MorseTranslator} with {@link CharacterSet}
-     *     {@link CharacterSet#LATIN LATIN},
-     *     {@link CharacterSet#PUNCTUATION PUNCTUATION},
-     *     and {@link CharacterSet#ARABIC_NUMERALS ARABIC_NUMERALS}
-     *     </li>
-     *     <li> {@link IMorseTiming} - a {@link ParisTiming} with a speed of {@link MorseTimingFactory#createParisTimingFromWpm(float) 20 wpm}</li>
-     *     <li> Frequency - {@code 700}</li>
-     *
-     * </ul>
+    public InterruptBehavior getInterruptBehavior() {
+        return interruptBehavior;
+    }
+    public void setInterruptBehavior(InterruptBehavior behavior) {
+        this.interruptBehavior = behavior;
+    }
+
+    /*
+    private static class TimeTable {
+        private final String fileName;
+
+        public TimeTable(String baseFileName) {
+            SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd_HHmmss");
+            String timestamp = formatter.format(new Date());
+            this.fileName = baseFileName + "_" + timestamp + ".csv";
+            initializeFile();
+        }
+        private void initializeFile() {
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
+                writer.write("Expected Time,Actual Time\n");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        public synchronized void addRecord(long expectedTime, long actualTime) {
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName, true))) {
+                writer.write(expectedTime + "," + actualTime + "\n");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
      */
+
+    private enum InterruptBehavior { //enum for interrupt behavior of playMorse() calls
+        NONE, //calls will be ignored if currently playing
+        DELAY, //new calls will be delayed until current call is finished
+        INTERRUPT //new calls will interrupt current call
+    }
+
     public static final class MorsePlayerBuilder {
-        /**
-         * The {@link MorseTranslator}
-         */
         private MorseTranslator translator;
-        /**
-         * The {@link IMorseTiming}
-         */
         private IMorseTiming timing;
-        /**
-         * The frequency
-         */
         private double frequency;
 
-        /**
-         * Instantiates a new {@code MorsePlayerBuilder} with default values.
-         */
+        private InterruptBehavior interruptBehavior;
+
         public MorsePlayerBuilder() {
             this.translator = new MorseTranslator()
                     .addMap(CharacterSet.LATIN)
@@ -280,51 +277,35 @@ public class MorsePlayer {
                     .addMap(CharacterSet.ARABIC_NUMERALS);
             this.timing = MorseTimingFactory.createParisTimingFromWpm(20);
             this.frequency = 700;
+            this.interruptBehavior = InterruptBehavior.NONE;
         }
 
-        /**
-         * Sets the {@link MorseTranslator} for the new instance of {@link MorsePlayer}
-         *
-         * @param translator the {@code MorseTranslator} to be used
-         * @return this {@code MorsePlayerBuilder}
-         */
         public MorsePlayerBuilder withTranslator(MorseTranslator translator) {
             this.translator = translator;
             return this;
         }
 
-        /**
-         * Sets the {@link IMorseTiming} for the new instance of {@link MorsePlayer}
-         *
-         * @param timing the {@code IMorseTiming} to be used
-         * @return this {@code MorsePlayerBuilder}
-         */
         public MorsePlayerBuilder withTiming(IMorseTiming timing) {
             this.timing = timing;
             return this;
         }
 
-        /**
-         * Sets the frequency which morse is played at for the new instance of {@link MorsePlayer}
-         *
-         * @param frequency the frequency in Hertz, as a {@code double}
-         * @return this {@code MorsePlayerBuilder}
-         */
         public MorsePlayerBuilder withFrequency(double frequency) {
             this.frequency = frequency;
             return this;
         }
 
-        /**
-         * Creates a new instance of {@link MorsePlayer}
-         *
-         * @return the new instance
-         */
+        public MorsePlayerBuilder withInterruptBehavior(InterruptBehavior interruptBehavior) {
+            this.interruptBehavior = interruptBehavior;
+            return this;
+        }
+
         public MorsePlayer build() {
             MorsePlayer morsePlayer = new MorsePlayer();
             morsePlayer.setTranslator(translator);
             morsePlayer.setTiming(timing);
             morsePlayer.setFrequency(frequency);
+            morsePlayer.setInterruptBehavior(interruptBehavior);
             return morsePlayer;
         }
     }

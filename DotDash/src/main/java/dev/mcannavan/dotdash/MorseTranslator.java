@@ -166,6 +166,22 @@ public class MorseTranslator {
         return true;
     }
 
+    public int symbolCount(String text) {
+        text = text.toUpperCase();
+        char[] characters = text.toCharArray();
+        int count = 0;
+        if(!validateInput(text)) {
+            throw new IllegalArgumentException("Failed to validate input: the input contains a character without a corresponding key-value pair in the character map.");
+        } else {
+            for (char character : characters) {
+                if (!Character.isWhitespace(character)) {
+                    count += characterMap.get(character).length();
+                }
+            }
+        }
+        return count;
+    }
+
     /**
      * Converts the input text to a {@code char[][][]} of morse code symbols.
      * <ul>
