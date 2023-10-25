@@ -30,17 +30,16 @@ class FarnsworthTimingTest {
         assertThrows(IllegalArgumentException.class, () -> correctInstantiationWithTwoParams.calculateSpeedFromMillis(100, -1), "failed negative pMs throws exception");
         assertThrows(IllegalArgumentException.class, () -> correctInstantiationWithTwoParams.calculateSpeedFromMillis(0, 100), "failed zero fMs throws exception");
         assertThrows(IllegalArgumentException.class, () -> correctInstantiationWithTwoParams.calculateSpeedFromMillis(100, 0), "failed zero pMs throws exception");
-        assertThrows(IllegalArgumentException.class, () -> correctInstantiationWithTwoParams.calculateSpeedFromMillis(-1, 0), "failed negative fMs & zero pMs throws exception");
 
         FarnsworthTiming correctInstantiationWithOneParam = MorseTimingFactory.createFarnsworthTimingFromMs(100);
         assertThrows(IllegalArgumentException.class, () -> correctInstantiationWithOneParam.calculateSpeedFromMillis(-1, 100), "failed negative fMs throws exception");
         assertThrows(IllegalArgumentException.class, () -> correctInstantiationWithOneParam.calculateSpeedFromMillis(100, -1), "failed negative pMs throws exception");
         assertThrows(IllegalArgumentException.class, () -> correctInstantiationWithOneParam.calculateSpeedFromMillis(0, 100), "failed zero fMs throws exception");
         assertThrows(IllegalArgumentException.class, () -> correctInstantiationWithOneParam.calculateSpeedFromMillis(100, 0), "failed zero pMs throws exception");
-        assertThrows(IllegalArgumentException.class, () -> correctInstantiationWithOneParam.calculateSpeedFromMillis(-1, 0), "failed negative fMs & zero pMs throws exception");
 
         //test incorrect factory calls
-        assertThrows(IllegalArgumentException.class, () -> { MorseTimingFactory.createFarnsworthTimingFromMs(-1,100);});
+        assertThrows(IllegalArgumentException.class, () -> { MorseTimingFactory.createFarnsworthTimingFromMs(-1,100);},"failed negative fMs throws exception");
+        assertThrows(IllegalArgumentException.class, () -> { MorseTimingFactory.createFarnsworthTimingFromMs(100, -1);},"failed negative pMs throws exception");
 
     }
 

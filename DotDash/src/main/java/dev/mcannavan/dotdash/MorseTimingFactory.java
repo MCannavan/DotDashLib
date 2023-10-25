@@ -2,6 +2,8 @@ package dev.mcannavan.dotdash;
 
 public class MorseTimingFactory {
 
+
+    //paris
     public static ParisTiming createParisTimingFromWpm(float wpm) {
         ParisTiming timing = new ParisTiming();
         timing.calculateSpeedFromWpm(wpm);
@@ -13,6 +15,8 @@ public class MorseTimingFactory {
         timing.calculateSpeedFromMillis(ms);
         return timing;
     }
+
+    //Farnsworth
 
     public static FarnsworthTiming createFarnsworthTimingFromMs(float fMs, float pMs) {
         FarnsworthTiming timing = new FarnsworthTiming();

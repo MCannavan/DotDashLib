@@ -1,12 +1,9 @@
 package dev.mcannavan.dotdash;
 
-import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.LineUnavailableException;
-import javax.sound.sampled.SourceDataLine;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import javax.sound.sampled.*;
+import java.io.*;
+import java.util.ArrayList;
+import java.util.concurrent.*;
 
 public class MorsePlayer {
 
@@ -14,10 +11,14 @@ public class MorsePlayer {
     private final SourceDataLine line;
     //private final TimeTable timeTable = new TimeTable("MorseEpochs");
     private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+    private final ArrayList<Future<?>> scheduledFutures = new ArrayList<>();
     private MorseTranslator translator;
     private IMorseTiming timing;
     private double frequency = 700;
-
+    private int globalDelay = 0;
+    private final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+    private static final int bitDepth = 16; // the Bit depth; assuming 16 bits per sample
+    private static final int nChannels = 1; // Number of channels; assuming mono
     private InterruptBehavior interruptBehavior = InterruptBehavior.NONE;
 
     private MorsePlayer() {
@@ -49,25 +50,17 @@ public class MorsePlayer {
             return false;
         }
     }
-    /* original playTone method, kept for reference
-    public void playTone(double duration, double frequency, double amplitude) {
-        int numSamples = (int) (duration * SAMPLE_FREQUENCY);
-        byte[] buffer = new byte[2 * numSamples];
 
-        double step = 2 * Math.PI * frequency / SAMPLE_FREQUENCY;
-        for (int i = 0; i < numSamples; i++) {
-            short sample = (short) (amplitude * Math.sin(i * step));
-            buffer[2 * i] = (byte) sample;
-            buffer[2 * i + 1] = (byte) (sample >> 8);
-        }
-        line.write(buffer, 0, buffer.length);
-        try {
-            Thread.sleep(Math.round(duration * 1000));
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+    public void  submitWithAutoRemoval(Runnable task, int delay) {
+        scheduledFutures.add(executor.schedule(
+        () -> {
+            try {
+                task.run();
+            } finally {
+                scheduledFutures.removeIf(Future::isDone);
+            }
+        }, delay, TimeUnit.MILLISECONDS));
     }
-     */
 
     private void playTone(double duration, double frequency, double amplitude) {
         final double FADE_IN_DURATION = duration * 0.05;
@@ -90,36 +83,54 @@ public class MorsePlayer {
         //long actualTime = System.currentTimeMillis();
         //timeTable.addRecord(expectedTime, actualTime);
         line.write(buffer, 0, buffer.length);
+        if(globalDelay > 0) {
+            globalDelay -= duration;
+        }
     }
 
     public void playMorse(double volumePercent, String morse) {
         playMorse(volumePercent, 0, morse);
     }
 
-    public void playMorse(double volumePercent, int initialDelay, String morse) throws IllegalArgumentException{
-        double amplitude = Math.round(volumePercent/100*32767d);
+    //TODO find out why this doesn't function on Windows, for now using saveToWav works as an alternative
+    public void playMorse(double volumePercent, int initialDelay, String morse) throws IllegalArgumentException {
+        if (interruptBehavior == InterruptBehavior.NONE && line.isActive()) {
+            return;
+        }
+        double amplitude = Math.round(volumePercent / 100 * 32767d);
         int delayTotal = initialDelay;
-        String toPlay = morse;
-        boolean longText = false;
-        if (morse.length() > 100) {
-            longText = true;
-            toPlay = morse.substring(0, 100);
-            morse = morse.substring(100);
+
+        switch (interruptBehavior) {
+            case NONE:
+            case INTERRUPT:
+                for(int i = 0; i <scheduledFutures.size(); i++) {
+                    scheduledFutures.get(i).cancel(true);
+                }
+                scheduledFutures.clear();
+                line.flush();
+                globalDelay = 0;
+                break;
+            case DELAY:
+                delayTotal += globalDelay;
+                break;
+            default:
+                throw new IllegalStateException("Unexpected value: " + interruptBehavior);
         }
         try {
             openLine();
             if (translator.validateInput(morse)) {
-                char[][][] phrase = translator.toMorseCharArray(toPlay);
+                char[][][] phrase = translator.toMorseCharArray(morse);
                 for (int i = 0; i < phrase.length; i++) { //for each word
                     for (int j = 0; j < phrase[i].length; j++) { //for each letter
                         for (int k = 0; k < phrase[i][j].length; k++) { //for each symbol
                             switch (phrase[i][j][k]) {
                                 case '-':
-                                    executor.schedule(() -> playTone(timing.getDahLength() / 1000d, frequency, amplitude), delayTotal, TimeUnit.MILLISECONDS);
+                                    submitWithAutoRemoval(() -> playTone(timing.getDahLength() / 1000d, frequency, amplitude),delayTotal);
                                     delayTotal += timing.getDahLength();
                                     break;
                                 case '.':
-                                    executor.schedule(() -> playTone(timing.getDitLength() / 1000d, frequency, amplitude), delayTotal, TimeUnit.MILLISECONDS);delayTotal += timing.getDitLength();
+                                    submitWithAutoRemoval(() -> playTone(timing.getDitLength() / 1000d, frequency, amplitude),delayTotal);
+                                    delayTotal += timing.getDitLength();
                                     break;
                             }
                             if (k < phrase[i][j].length - 1) {
@@ -139,64 +150,10 @@ public class MorsePlayer {
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            if (!longText) {
-                executor.schedule(this::closeLine, delayTotal, TimeUnit.MILLISECONDS);
-            } else {
-                playMorse(volumePercent, delayTotal, morse);
-            }
+            executor.schedule(this::closeLine, delayTotal, TimeUnit.MILLISECONDS);
+            globalDelay += delayTotal;
         }
     }
-
-    /*
-    private void playMorseRecursive(double volumePercent, char[][][] phrase, int wordIndex, int letterIndex, int symbolIndex, long delay) {
-        try {
-            openLine();
-        } catch (LineUnavailableException e) {
-            throw new RuntimeException(e);
-        }
-
-        if (wordIndex >= phrase.length) {
-            executor.schedule(this::closeLine, delay, TimeUnit.MILLISECONDS);
-            return;
-        }
-
-        if (letterIndex >= phrase[wordIndex].length) {
-            delay += timing.getInterWordLength();
-            playMorseRecursive(volumePercent, phrase, wordIndex + 1, 0, 0, delay);
-            return;
-        }
-
-        if (symbolIndex >= phrase[wordIndex][letterIndex].length) {
-            delay += timing.getInterCharLength();
-            playMorseRecursive(volumePercent, phrase, wordIndex, letterIndex + 1, 0, delay);
-            return;
-        }
-
-        char symbol = phrase[wordIndex][letterIndex][symbolIndex];
-        double duration = 0;
-
-        switch (symbol) {
-            case '-':
-                duration = timing.getDahLength() / 1000d;
-                break;
-            case '.':
-                duration = timing.getDitLength() / 1000d;
-                break;
-            default:
-                throw new IllegalArgumentException("Invalid morse code");
-        }
-
-        double amplitude = Math.round(volumePercent / 100 * 32767d);
-        long expectedTime = System.currentTimeMillis() + delay;
-
-        double finalDuration = duration;
-        executor.schedule(() -> {
-            playTone(finalDuration, frequency, amplitude, expectedTime);
-            long nextDelay = (long) ((long) (finalDuration * 1000) + timing.getIntraCharLength());
-            playMorseRecursive(volumePercent, phrase, wordIndex, letterIndex, symbolIndex + 1, nextDelay);
-        }, delay, TimeUnit.MILLISECONDS);
-    }
-    */
 
     public MorseTranslator getTranslator() {
         return translator;
@@ -225,6 +182,7 @@ public class MorsePlayer {
     public InterruptBehavior getInterruptBehavior() {
         return interruptBehavior;
     }
+
     public void setInterruptBehavior(InterruptBehavior behavior) {
         this.interruptBehavior = behavior;
     }
@@ -234,7 +192,7 @@ public class MorsePlayer {
         private final String fileName;
 
         public TimeTable(String baseFileName) {
-            SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd_HHmmss");
+            SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd_HHmmss");
             String timestamp = formatter.format(new Date());
             this.fileName = baseFileName + "_" + timestamp + ".csv";
             initializeFile();
@@ -309,4 +267,112 @@ public class MorsePlayer {
             return morsePlayer;
         }
     }
+
+    public void saveToWav(double volumePercent, String fileName, String morse) throws IllegalArgumentException {
+        double amplitude = Math.round(volumePercent / 100 * 32767d);
+
+        if(fileName.endsWith(".wav")) { //remove .wav from filename
+            fileName = fileName.substring(0,fileName.length()-3);
+        }
+
+        fileName = fileName + ".wav";
+        File file = new File(fileName);
+        String filePath = file.getAbsolutePath();
+
+        try(RandomAccessFile raw = new RandomAccessFile(file.getAbsolutePath(), "rw")) {
+            writeWavHeader(raw);
+            if (translator.validateInput(morse)) {
+                char[][][] phrase = translator.toMorseCharArray(morse);
+
+                for(int i = 0; i < phrase.length; i++) { //for each word (e.g.: lorem, ipsum, dolor)
+                    for(int j = 0; j < phrase[i].length; j++) { //for each letter (e.g.: a,b,c)
+                        for(int k = 0; k < phrase[i][j].length; k++) { //for each symbol (e.g.: .,-)
+                            switch (phrase[i][j][k]) {
+                                case '-':
+                                    saveToneToWav(raw, timing.getDahLength() / 1000d, frequency, amplitude);
+                                    break;
+                                case '.':
+                                    saveToneToWav(raw, timing.getDitLength() / 1000d, frequency, amplitude);
+                                    break;
+                            }
+                            saveToneToWav(raw, timing.getIntraCharLength() / 1000d,frequency,0); //intra-char space
+                        }
+                        saveToneToWav(raw, timing.getInterCharLength() / 1000d,frequency,0); //inter-char space
+                    }
+                    saveToneToWav(raw, timing.getInterWordLength() / 1000d,frequency,0); //inter-word space
+                }
+
+
+                closeFile(raw);
+            }
+        } catch(IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void saveToneToWav(RandomAccessFile raw, double duration, double frequency, double amplitude) {
+        final double FADE_IN_DURATION = duration * 0.05;
+        final double FADE_OUT_DURATION = duration * 0.055;
+
+        int numSamples = (int) (duration * SAMPLE_FREQUENCY);
+        double step = 2 * Math.PI * frequency / SAMPLE_FREQUENCY;
+        try {
+            for (int i = 0; i < numSamples; i++) {
+                double fade = 1.0;
+
+                if (i < FADE_IN_DURATION * SAMPLE_FREQUENCY) {
+                    fade = i / (FADE_IN_DURATION * SAMPLE_FREQUENCY);
+                } else if (i > numSamples - (FADE_OUT_DURATION * SAMPLE_FREQUENCY)) {
+                    fade = 1.0 - ((i - (numSamples - (FADE_OUT_DURATION * SAMPLE_FREQUENCY))) / (FADE_OUT_DURATION * SAMPLE_FREQUENCY));
+                }
+
+                float sampleValue = (float) (amplitude * Math.sin(i * step) * fade);
+
+                writeSample(raw, sampleValue);
+            }
+        } catch (IOException e) {
+            System.out.println("I/O exception occurred while writing data");
+        }
+    }
+
+    private void writeWavHeader(RandomAccessFile raw) throws IOException {
+        raw.setLength(0);
+        raw.writeBytes("RIFF");
+        raw.writeInt(0); // Final file size not known yet, write 0. This is = sample count + 36 bytes from header.
+        raw.writeBytes("WAVE");
+        raw.writeBytes("fmt ");
+        raw.writeInt(Integer.reverseBytes(16)); // Sub-chunk size, 16 for PCM
+        raw.writeShort(Short.reverseBytes((short) 1)); // AudioFormat, 1 for PCM
+        raw.writeShort(Short.reverseBytes((short)nChannels));// Number of channels, 1 for mono, 2 for stereo
+        raw.writeInt(Integer.reverseBytes((int)SAMPLE_FREQUENCY)); // Sample rate
+        raw.writeInt(Integer.reverseBytes((int)SAMPLE_FREQUENCY*bitDepth*nChannels/8)); // Byte rate, SampleRate*NumberOfChannels*bitDepth/8
+        raw.writeShort(Short.reverseBytes((short)(nChannels*bitDepth/8))); // Block align, NumberOfChannels*bitDepth/8
+        raw.writeShort(Short.reverseBytes((short)bitDepth)); // Bit Depth
+        raw.writeBytes("data");
+        raw.writeInt(0); // Data chunk size not known yet, write 0. This is = sample count.
+    }
+
+    private static void writeSample(RandomAccessFile raw, float floatValue) throws IOException {
+        short sample = (short) (floatValue);
+        raw.writeShort(Short.reverseBytes(sample));
+    }
+
+
+    private static void closeFile(RandomAccessFile raw) throws IOException {
+        raw.seek(4);
+        raw.writeInt(Integer.reverseBytes((int) raw.length() - 8));
+        raw.seek(40);
+        raw.writeInt(Integer.reverseBytes((int) raw.length() - 44));
+        raw.close();
+    }
+
+    private AudioFormat getAudioFormat() {
+        int sampleSizeInBits = 16;
+        int channels = 1;
+        boolean signed = true;
+        boolean bigEndian = true;
+        return new AudioFormat(SAMPLE_FREQUENCY, sampleSizeInBits, channels, signed, bigEndian);
+    }
+
+
 }

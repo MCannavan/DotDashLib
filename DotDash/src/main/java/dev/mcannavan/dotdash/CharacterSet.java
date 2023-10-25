@@ -8,7 +8,7 @@ import com.google.common.collect.HashBiMap;
  */
 public enum CharacterSet {
     /**
-     * The Latin Alphabet A-Z
+     * The Latin Alphabet, A-Z.
      */
     LATIN {
         @Override

@@ -66,7 +66,7 @@ class FarnsworthTiming implements IMorseTiming {
 
     public void calculateSpeedFromWpm(float fWpm, float pWpm) throws IllegalArgumentException, ArithmeticException {
         if (pWpm <= 0 || fWpm <= 0) {
-            throw new IllegalArgumentException("expected non-negative, non-zero values of pWpm and fWpm. Actual values: pWpm=" + pWpm + ", fWpm=" + fWpm);
+            throw new IllegalArgumentException("expected non-negative, non-zero values of pWpm and fWpm. Actual value: pWpm=" + pWpm + ", fWpm=" + fWpm);
 
         } else if (pWpm/fWpm <= 0.62) { //max ratio fWpm:pWpm is ~ 1.6129 or min pWpm:fWpm = 0.62
             throw new ArithmeticException("ratio between fWpm and pWpm above maximum ratio ~1.6129. actual: "+pWpm/fWpm);
