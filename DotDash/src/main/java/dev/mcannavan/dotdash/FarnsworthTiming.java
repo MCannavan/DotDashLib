@@ -66,8 +66,7 @@ class FarnsworthTiming implements IMorseTiming {
 
     public void calculateSpeedFromWpm(float fWpm, float pWpm) throws IllegalArgumentException, ArithmeticException {
         if (pWpm <= 0 || fWpm <= 0) {
-            throw new IllegalArgumentException("expected non-negative, non-zero values of pWpm and fWpm. Actual value: pWpm=" + pWpm + ", fWpm=" + fWpm);
-
+            throw new IllegalArgumentException("expected non-negative, non-zero values of pWpm and fWpm. Actual value: pWpm = " + pWpm + ", fWpm = " + fWpm);
         } else if (pWpm/fWpm <= 0.62) { //max ratio fWpm:pWpm is ~ 1.6129 or min pWpm:fWpm = 0.62
             throw new ArithmeticException("ratio between fWpm and pWpm above maximum ratio ~1.6129. actual: "+pWpm/fWpm);
         }
@@ -75,13 +74,12 @@ class FarnsworthTiming implements IMorseTiming {
         this.pWpm = pWpm;
         this.fWpm = fWpm;
 
-        float fMs = (((60f / fWpm) - (37.2f / pWpm)) * 1000f) / 19f;
-        float pMs = 1 / ((pWpm * 50f) / 60) * 1000;
+        float fMs = (float) (((60 / fWpm) - (37.2 / pWpm)) * 1000) / 19;
+        float pMs = (float) 1 / ((pWpm * 50) / 60) * 1000;
         if (Float.isInfinite(7*fMs) || Float.isInfinite(3*pMs)) {
             throw new ArithmeticException("floating-point overflow when calculating fMs or pMs." +
                     "\nfMs: " + fMs + ", pMs: " + pMs +
-                    "\nfWpm: " + fWpm +  ", pWpm: " + pWpm +
-                    "");
+                    "\nfWpm: " + fWpm +  ", pWpm: " + pWpm);
         }
         calculateSpeedFromMillis(fMs, pMs);
     }

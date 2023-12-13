@@ -52,7 +52,7 @@ class ParisTiming implements IMorseTiming {
         if (ms < 0) {
             throw new IllegalArgumentException("Input ms must be greater than or equal to " + 0 + ". Actual value: " + ms);
         }
-        wpm = (60f * (1f / (ms / 1000f)) / 50f);
+        wpm = (60f * (1f / (ms / 1000)) / 50f);
         ditLengthMillis = Math.round(ms);
         dahLengthMillis = Math.round(ms * 3);
         interCharLengthMillis = Math.round(ms * 3);
@@ -71,7 +71,7 @@ class ParisTiming implements IMorseTiming {
         if (wpm <= 0) {
             throw new IllegalArgumentException("Input wpm must be greater than 0. Actual value: " + wpm);
         }
-        float ms = 1f / ((wpm * 50f) / 60f) * 1000f;
+        float ms = 1f / ((wpm * 50f) / 60f) * 1000;
         if (Float.isInfinite(7*ms)) { //check largest instance variable for overflow
             throw new ArithmeticException("floating-point overflow when calculating ms. ms = "+ ms + ", wpm = " + wpm);
         }

@@ -63,18 +63,18 @@ class MorseTranslatorTest {
         morseTranslator.addMap(CharacterSet.LATIN.getCharacterSet());
         char[][][] expectedResult2 = new char[][][]{
                 {
-                        {'.', '-', '.', '.'}, // L: .-..
-                        {'-', '-', '-'}, // O: ---
-                        {'.', '-', '.'}, // R: .-.
-                        {'.'}, // E: .
-                        {'-', '-'}  // M: --
+                        {'.', '-', '.', '.'},   // L: .-..
+                        {'-', '-', '-'},        // O: ---
+                        {'.', '-', '.'},        // R: .-.
+                        {'.'},                  // E: .
+                        {'-', '-'}              // M: --
                 },
                 {
-                        {'.', '.'}, // I: ..
-                        {'.', '-', '-', '.'},  // P: .--.
-                        {'.', '.', '.'}, // S: ...
-                        {'.', '.', '-'}, // U: ..-
-                        {'-', '-'}  // M: --
+                        {'.', '.'},             // I: ..
+                        {'.', '-', '-', '.'},   // P: .--.
+                        {'.', '.', '.'},        // S: ...
+                        {'.', '.', '-'},        // U: ..-
+                        {'-', '-'}              // M: --
                 }
         };
         assertArrayEquals(expectedResult2, morseTranslator.toMorseCharArray("Lorem Ipsum"));
