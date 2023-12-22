@@ -30,6 +30,7 @@ public class MorsePlayer {
 
     private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
     private final ArrayList<Future<?>> scheduledFutures = new ArrayList<>();
+    private final ArrayList<Future<?>> discardedFutures = new ArrayList<>();
     private MorseTranslator translator;
     private IMorseTiming timing;
     private double frequency; //Tone frequency in Hertz (Hz)
@@ -150,6 +151,9 @@ public class MorsePlayer {
                         task.run();
                     } finally {
                         scheduledFutures.removeIf(Future::isDone);
+                        if(!discardedFutures.isEmpty()) {
+                            discardedFutures.removeIf(Future::isDone);
+                        }
                     }
                 }, delay, TimeUnit.MILLISECONDS));
     }
@@ -187,24 +191,21 @@ public class MorsePlayer {
     //TODO:
     // - find out why this doesn't function on Windows, saveToWav works as an alternative
     // - fix DELAY interrupt behavior not functioning correctly
-    // - figure out how to get INTERRUPT InterruptBehavior to work with initial delay, such that it only interrupts
-    //   once the initial delay has been exceeded
     public void playMorse(double volumePercent, int initialDelay, String morse) throws IllegalArgumentException {
         double amplitude = Math.round(volumePercent / 100 * Short.MAX_VALUE);
         int delayTotal = initialDelay;
 
         switch (interruptBehavior) {
             case INTERRUPT:
-                int interruptDelay = initialDelay <= 100 ? 0 : initialDelay-100; //if initial delay is less than 100 ms, set to 0
-                System.out.println(interruptDelay);
-                submitWithAutoRemoval(() -> {
-                    for(int i = 0; i <scheduledFutures.size(); i++) {
-                        scheduledFutures.get(i).cancel(true);
-                    }
-                    scheduledFutures.clear();
-                    line.flush();
-                    globalDelay = 0;
+                int interruptDelay = initialDelay < 100 ? 0 : initialDelay-100; //if initial delay is less than 100 ms, set to 0
+                discardedFutures.addAll(scheduledFutures);
+                scheduledFutures.clear();
+                globalDelay = 0;
 
+                submitWithAutoRemoval(() -> {
+                    for(int i = 0; i < discardedFutures.size(); i++) {
+                        discardedFutures.get(i).cancel(true);
+                    }
                 }, interruptDelay);
                 break;
             case DELAY:
@@ -230,14 +231,12 @@ public class MorsePlayer {
                                 case '-':
                                     submitWithAutoRemoval(() -> playTone(timing.getDahLength() / 1000, //convert Ms to seconds
                                             frequency, amplitude), delayTotal);
-                                    System.out.print("-");
                                     delayTotal += timing.getDahLength();
                                     break;
                                 case '.':
                                     submitWithAutoRemoval(() -> playTone(timing.getDitLength() / 1000, //convert Ms to seconds
                                             frequency, amplitude), delayTotal);
                                     delayTotal += timing.getDitLength();
-                                    System.out.print(".");
                                     break;
                             }
                             if (k < phrase[i][j].length - 1) {
@@ -399,8 +398,8 @@ public class MorsePlayer {
         MorsePlayer morsePlayer = new MorsePlayerBuilder()
                 .withInterruptBehavior(InterruptBehavior.INTERRUPT)
                 .build();
-        morsePlayer.playMorse(100,"SSSS");
-        morsePlayer.playMorse(100, 1000,"OOOO");
+        morsePlayer.playMorse(100,"SSSSSSSSSSS");
+        morsePlayer.playMorse(100, 2000,"OOOOO");
 
     }
 }
