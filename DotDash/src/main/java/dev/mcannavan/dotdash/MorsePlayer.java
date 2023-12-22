@@ -7,7 +7,6 @@ import java.util.concurrent.*;
 
 //TODO:
 // - create logging subclass
-//    - override playTone() method
 //    - include timetable inner class & associated class variables
 //        - potentially use bridge pattern?
 // - fix playMorse() method not working on windows
@@ -26,7 +25,7 @@ public class MorsePlayer {
     private static final int N_CHANNELS = 1; // Number of channels; mono
     private final SourceDataLine line;
 
-//private final TimeTable timeTable = new TimeTable("MorseEpochs");
+    //private final TimeTable timeTable = new TimeTable("MorseEpochs");
 
     private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
     private final ArrayList<Future<?>> scheduledFutures = new ArrayList<>();
@@ -134,7 +133,8 @@ public class MorsePlayer {
         }
     }
 
-    private boolean closeLine() {
+    //TODO finish line closing rework
+    private boolean closeLine(boolean forced) {
         if (line.isOpen()) {
             line.drain();
             line.close();
@@ -156,6 +156,7 @@ public class MorsePlayer {
                         }
                     }
                 }, delay, TimeUnit.MILLISECONDS));
+        return;
     }
 
     private void playTone(double duration, double frequency, double amplitude) {
@@ -190,7 +191,6 @@ public class MorsePlayer {
 
     //TODO:
     // - find out why this doesn't function on Windows, saveToWav works as an alternative
-    // - fix DELAY interrupt behavior not functioning correctly
     public void playMorse(double volumePercent, int initialDelay, String morse) throws IllegalArgumentException {
         double amplitude = Math.round(volumePercent / 100 * Short.MAX_VALUE);
         int delayTotal = initialDelay;
@@ -209,7 +209,7 @@ public class MorsePlayer {
                 }, interruptDelay);
                 break;
             case DELAY:
-                delayTotal += globalDelay;
+                //delayTotal += 5000;
                 //System.out.println(delayTotal);
                 break;
             case NONE:
@@ -222,6 +222,7 @@ public class MorsePlayer {
         }
         try {
             openLine();
+            System.out.println("success");
             if (translator.validateInput(morse)) {
                 char[][][] phrase = translator.toMorseCharArray(morse);
                 for (int i = 0; i < phrase.length; i++) { //for each word
@@ -256,7 +257,6 @@ public class MorsePlayer {
         } catch (Exception e) {
             e.printStackTrace();
         } finally {
-            executor.schedule(this::closeLine, delayTotal, TimeUnit.MILLISECONDS);
             globalDelay += delayTotal;
         }
     }
@@ -396,10 +396,10 @@ public class MorsePlayer {
     }
     public static void main(String[] args) {
         MorsePlayer morsePlayer = new MorsePlayerBuilder()
-                .withInterruptBehavior(InterruptBehavior.INTERRUPT)
+                .withInterruptBehavior(InterruptBehavior.DELAY)
                 .build();
-        morsePlayer.playMorse(100,"SSSSSSSSSSS");
-        morsePlayer.playMorse(100, 2000,"OOOOO");
+        morsePlayer.playMorse(100,"Lorem ipsum dolor sit amet, consectetur adipiscing");
+        morsePlayer.playMorse(100, 5000,"OOOOO");
 
     }
 }
