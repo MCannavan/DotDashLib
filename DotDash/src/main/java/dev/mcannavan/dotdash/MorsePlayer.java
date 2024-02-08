@@ -301,9 +301,9 @@ public class MorsePlayer {
     private void writeWavHeader(RandomAccessFile raw) throws IOException {
         raw.setLength(0);
         raw.writeBytes("RIFF");
-        raw.writeInt(0);
-        raw.writeBytes("WAVE");
-        raw.writeBytes("fmt ");
+        raw.writeInt(0);  //init length
+        raw.writeBytes("WAVE"); //file type header
+        raw.writeBytes("fmt "); //format chunk marker
         raw.writeInt(Integer.reverseBytes(SAMPLES_SIZE_IN_BITS));
         raw.writeShort(Short.reverseBytes((short) 1));
         raw.writeShort(Short.reverseBytes((short) N_CHANNELS));
@@ -312,14 +312,14 @@ public class MorsePlayer {
         raw.writeShort(Short.reverseBytes((short)(N_CHANNELS * SAMPLES_SIZE_IN_BITS /8)));
         raw.writeShort(Short.reverseBytes((short) SAMPLES_SIZE_IN_BITS));
         raw.writeBytes("data");
-        raw.writeInt(0);
+        raw.writeInt(0); //init dize of data section
     }
 
     private static void closeWavFile(RandomAccessFile raw) throws IOException {
-        raw.seek(4);
-        raw.writeInt(Integer.reverseBytes((int) raw.length() - 8));
-        raw.seek(40);
-        raw.writeInt(Integer.reverseBytes((int) raw.length() - 44));
+        raw.seek(4); // bytes 4-8: total file size
+        raw.writeInt(Integer.reverseBytes((int) raw.length() - 8)); //size of the total file subtract 8 bytes
+        raw.seek(40); // bytes 40-44: data section size
+        raw.writeInt(Integer.reverseBytes((int) raw.length() - 44)); //size of data section (total size subtract the header size
         raw.close();
     }
 
