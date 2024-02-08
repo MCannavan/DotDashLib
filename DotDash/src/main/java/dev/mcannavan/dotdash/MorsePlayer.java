@@ -17,6 +17,9 @@ import java.util.concurrent.*;
 // - remove unused methods
 // - review magic numbers
 // - consider interface (better for abstraction)
+// -
+// - pot. add stereo mode
+//    - virtual positioning?
 
 public class MorsePlayer {
 
