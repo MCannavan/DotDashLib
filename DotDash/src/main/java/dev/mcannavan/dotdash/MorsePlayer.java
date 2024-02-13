@@ -2,6 +2,7 @@ package dev.mcannavan.dotdash;
 
 import javax.sound.sampled.*;
 import java.io.*;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.concurrent.*;
 
@@ -315,7 +316,7 @@ public class MorsePlayer {
         raw.writeShort(Short.reverseBytes((short)(N_CHANNELS * SAMPLES_SIZE_IN_BITS /8)));
         raw.writeShort(Short.reverseBytes((short) SAMPLES_SIZE_IN_BITS));
         raw.writeBytes("data");
-        raw.writeInt(0); //init dize of data section
+        raw.writeInt(0); //init size of data section
     }
 
     private static void closeWavFile(RandomAccessFile raw) throws IOException {
@@ -324,11 +325,14 @@ public class MorsePlayer {
         raw.seek(40); // bytes 40-44: data section size
         raw.writeInt(Integer.reverseBytes((int) raw.length() - 44)); //size of data section (total size subtract the header size
         raw.close();
+
+        System.out.println("Finished writing file ");
     }
 
+    //TODO rework wav methods to reduce write operations; for now slightly improved by converting to byte[] before writing
     private static void writeSample(RandomAccessFile raw, float floatValue) throws IOException {
-        short sample = (short) (floatValue);
-        raw.writeShort(Short.reverseBytes(sample));
+        byte[] sample = ByteBuffer.allocate(4).putFloat(Short.reverseBytes((short) floatValue)).array();
+        raw.write(sample);
     }
 
     private void saveToneToWav(RandomAccessFile raw, double duration, double frequency, double amplitude) {
@@ -339,16 +343,20 @@ public class MorsePlayer {
         double step = 2 * Math.PI * frequency / SAMPLE_FREQUENCY;
         try {
             for (int i = 0; i < numSamples; i++) {
-                double fade = 1.0;
+                float sampleValue;
+                if(amplitude > 0) {
+                    double fade = 1.0;
 
-                if (i < FADE_IN_DURATION * SAMPLE_FREQUENCY) {
-                    fade = i / (FADE_IN_DURATION * SAMPLE_FREQUENCY);
-                } else if (i > numSamples - (FADE_OUT_DURATION * SAMPLE_FREQUENCY)) {
-                    fade = 1.0 - ((i - (numSamples - (FADE_OUT_DURATION * SAMPLE_FREQUENCY))) / (FADE_OUT_DURATION * SAMPLE_FREQUENCY));
+                    if (i < FADE_IN_DURATION * SAMPLE_FREQUENCY) {
+                        fade = i / (FADE_IN_DURATION * SAMPLE_FREQUENCY);
+                    } else if (i > numSamples - (FADE_OUT_DURATION * SAMPLE_FREQUENCY)) {
+                        fade = 1.0 - ((i - (numSamples - (FADE_OUT_DURATION * SAMPLE_FREQUENCY))) / (FADE_OUT_DURATION * SAMPLE_FREQUENCY));
+                    }
+
+                    sampleValue = (float) (amplitude * Math.sin(i * step) * fade);
+                } else {
+                    sampleValue = 0;
                 }
-
-                float sampleValue = (float) (amplitude * Math.sin(i * step) * fade);
-
                 writeSample(raw, sampleValue);
             }
         } catch (IOException e) {
@@ -356,8 +364,6 @@ public class MorsePlayer {
         }
     }
 
-
-    //TODO consider replacing filePath and fileName with single filePath parameter
     public void saveMorseToWav(double volumePercent, String filePath, String fileName, String morse) throws IllegalArgumentException {
         double amplitude = Math.round(volumePercent / 100 * Short.MAX_VALUE);
 
@@ -371,25 +377,22 @@ public class MorsePlayer {
             writeWavHeader(raw);
             if (translator.validateInput(morse)) {
                 char[][][] phrase = translator.toMorseCharArray(morse);
-
                 for(int i = 0; i < phrase.length; i++) { //for each word (e.g.: lorem, ipsum, dolor)
                     for(int j = 0; j < phrase[i].length; j++) { //for each letter (e.g.: a,b,c)
                         for(int k = 0; k < phrase[i][j].length; k++) { //for each symbol (e.g.: .,-)
                             switch (phrase[i][j][k]) {
                                 case '-':
                                     saveToneToWav(raw, timing.getDahLength() / 1000, frequency, amplitude);
-                                    break;
                                 case '.':
                                     saveToneToWav(raw, timing.getDitLength() / 1000, frequency, amplitude);
-                                    break;
                             }
                             saveToneToWav(raw, timing.getIntraCharLength() / 1000,frequency,0); //intra-char space
                         }
                         saveToneToWav(raw, timing.getInterCharLength() / 1000,frequency,0); //inter-char space
                     }
                     saveToneToWav(raw, timing.getInterWordLength() / 1000,frequency,0); //inter-word space
+                    System.out.println(i);
                 }
-
 
                 closeWavFile(raw);
             }
@@ -401,8 +404,38 @@ public class MorsePlayer {
         MorsePlayer morsePlayer = new MorsePlayerBuilder()
                 .withInterruptBehavior(InterruptBehavior.DELAY)
                 .build();
-        morsePlayer.playMorse(100,"Lorem ipsum dolor sit amet, consectetur adipiscing");
-        morsePlayer.playMorse(100, 5000,"OOOOO");
+
+        String morse = "dui faucibus in ornare quam viverra orci sagittis eu volutpat odio " +
+                "facilisis mauris sit amet massa vitae tortor condimentum lacinia quis vel " +
+                "eros donec ac odio tempor orci dapibus ultrices in iaculis nunc sed augue " +
+                "lacus viverra vitae congue eu consequat ac felis donec et odio pellentesque " +
+                "diam volutpat commodo sed egestas egestas fringilla phasellus faucibus scelerisque " +
+                "eleifend donec pretium vulputate sapien nec sagittis aliquam malesuada bibendum " +
+                "arcu vitae elementum curabitur vitae nunc sed velit dignissim sodales ut eu " +
+                "sem integer vitae justo eget magna fermentum iaculis eu non diam phasellus " +
+                "vestibulum lorem sed risus ultricies tristique nulla aliquet enim tortor at " +
+                "auctor urna nunc id cursus metus aliquam eleifend mi in nulla posuere sollicitudin " +
+                "aliquam ultrices sagittis orci a scelerisque purus semper eget duis at tellus " +
+                "at urna condimentum mattis pellentesque id nibh tortor id aliquet lectus proin " +
+                "nibh nisl condimentum id venenatis a condimentum vitae sapien pellentesque " +
+                "habitant morbi tristique senectus et netus et malesuada fames ac turpis " +
+                "egestas sed tempus urna et pharetra pharetra massa massa ultricies mi quis " +
+                "hendrerit dolor magna eget est lorem ipsum dolor sit amet consectetur adipiscing " +
+                "elit pellentesque habitant morbi tristique senectus et netus et malesuada " +
+                "fames ac turpis egestas integer eget aliquet nibh praesent tristique magna " +
+                "sit amet purus gravida quis blandit turpis cursus in hac habitasse platea " +
+                "dictumst quisque sagittis purus sit amet volutpat consequat mauris nunc congue " +
+                "nisi vitae suscipit tellus mauris a diam maecenas sed enim ut sem viverra aliquet " +
+                "eget sit amet tellus cras adipiscing enim eu turpis egestas pretium aenean pharetra " +
+                "magna ac placerat vestibulum lectus mauris ultrices eros in cursus turpis massa " +
+                "tincidunt dui ut ornare lectus sit amet est placerat in egestas erat imperdiet " +
+                "sed euismod nisi porta lorem mollis aliquam ut porttitor leo a diam sollicitudin";
+
+        //morse = "lorem ipsum dolor sit amet";
+
+        morsePlayer.saveMorseToWav(100,"DotDash/src/test/","test",morse);
+        //morsePlayer.playMorse(100,"Lorem ipsum dolor sit amet, consectetur adipiscing");
+        //morsePlayer.playMorse(100, 5000,"OOOOO");
 
     }
 }

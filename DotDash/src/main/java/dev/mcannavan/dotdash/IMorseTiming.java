@@ -6,14 +6,14 @@ package dev.mcannavan.dotdash;
 public interface IMorseTiming {
 
     /**
-     * Gets the length of a dit (dot).
+     * Gets the length of a dit (dot: '.').
      *
      * @return the dit length
      */
     float getDitLength();
 
     /**
-     * Gets the length of a dah (dash).
+     * Gets the length of a dah (dash: '-').
      *
      * @return the dah length
      */
