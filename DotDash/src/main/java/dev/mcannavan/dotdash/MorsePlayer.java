@@ -3,7 +3,10 @@ package dev.mcannavan.dotdash;
 import javax.sound.sampled.*;
 import java.io.*;
 import java.nio.ByteBuffer;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.*;
 
 //TODO:
@@ -160,7 +163,6 @@ public class MorsePlayer {
                         }
                     }
                 }, delay, TimeUnit.MILLISECONDS));
-        return;
     }
 
     private void playTone(double duration, double frequency, double amplitude) {
@@ -213,8 +215,6 @@ public class MorsePlayer {
                 }, interruptDelay);
                 break;
             case DELAY:
-                //delayTotal += 5000;
-                //System.out.println(delayTotal);
                 break;
             case NONE:
                 if(!scheduledFutures.isEmpty()) {
@@ -329,19 +329,17 @@ public class MorsePlayer {
         System.out.println("Finished writing file ");
     }
 
-    //TODO rework wav methods to reduce write operations; for now slightly improved by converting to byte[] before writing
-    private static void writeSample(RandomAccessFile raw, float floatValue) throws IOException {
-        byte[] sample = ByteBuffer.allocate(4).putFloat(Short.reverseBytes((short) floatValue)).array();
+    private static void writeSample(RandomAccessFile raw, byte[] sample) throws IOException {
         raw.write(sample);
     }
 
-    private void saveToneToWav(RandomAccessFile raw, double duration, double frequency, double amplitude) {
+    private ArrayDeque<Byte> saveToneToWav(double duration, double frequency, double amplitude) {
         final double FADE_IN_DURATION = duration * 0.05;
         final double FADE_OUT_DURATION = duration * 0.055;
+        ArrayDeque<Byte> result = new ArrayDeque<Byte>();
 
         int numSamples = (int) (duration * SAMPLE_FREQUENCY);
         double step = 2 * Math.PI * frequency / SAMPLE_FREQUENCY;
-        try {
             for (int i = 0; i < numSamples; i++) {
                 float sampleValue;
                 if(amplitude > 0) {
@@ -352,16 +350,16 @@ public class MorsePlayer {
                     } else if (i > numSamples - (FADE_OUT_DURATION * SAMPLE_FREQUENCY)) {
                         fade = 1.0 - ((i - (numSamples - (FADE_OUT_DURATION * SAMPLE_FREQUENCY))) / (FADE_OUT_DURATION * SAMPLE_FREQUENCY));
                     }
-
                     sampleValue = (float) (amplitude * Math.sin(i * step) * fade);
                 } else {
                     sampleValue = 0;
                 }
-                writeSample(raw, sampleValue);
+                byte[] temp = ByteBuffer.allocate(2).putShort(Short.reverseBytes((short) sampleValue)).array();
+                for(byte b : temp) {
+                    result.add(b);
+                }
             }
-        } catch (IOException e) {
-            System.out.println("I/O exception occurred while writing data");
-        }
+        return result;
     }
 
     public void saveMorseToWav(double volumePercent, String filePath, String fileName, String morse) throws IllegalArgumentException {
@@ -376,23 +374,36 @@ public class MorsePlayer {
         try(RandomAccessFile raw = new RandomAccessFile(file.getAbsolutePath(), "rw")) {
             writeWavHeader(raw);
             if (translator.validateInput(morse)) {
+                ArrayDeque<Byte> byteDeque = new ArrayDeque<>();
+                ArrayDeque<Byte> temp = new ArrayDeque<>();
                 char[][][] phrase = translator.toMorseCharArray(morse);
                 for(int i = 0; i < phrase.length; i++) { //for each word (e.g.: lorem, ipsum, dolor)
                     for(int j = 0; j < phrase[i].length; j++) { //for each letter (e.g.: a,b,c)
                         for(int k = 0; k < phrase[i][j].length; k++) { //for each symbol (e.g.: .,-)
                             switch (phrase[i][j][k]) {
                                 case '-':
-                                    saveToneToWav(raw, timing.getDahLength() / 1000, frequency, amplitude);
+                                    temp = saveToneToWav(timing.getDahLength() / 1000, frequency, amplitude);
+                                    break;
                                 case '.':
-                                    saveToneToWav(raw, timing.getDitLength() / 1000, frequency, amplitude);
+                                    temp = saveToneToWav(timing.getDitLength() / 1000, frequency, amplitude);
+                                    break;
                             }
-                            saveToneToWav(raw, timing.getIntraCharLength() / 1000,frequency,0); //intra-char space
+                            byteDeque.addAll(temp);
+                            temp = saveToneToWav(timing.getIntraCharLength() / 1000,frequency,0); //intra-char space
+                            byteDeque.addAll(temp);
                         }
-                        saveToneToWav(raw, timing.getInterCharLength() / 1000,frequency,0); //inter-char space
+                        temp = saveToneToWav(timing.getInterCharLength() / 1000,frequency,0); //inter-char space
+                        byteDeque.addAll(temp);
                     }
-                    saveToneToWav(raw, timing.getInterWordLength() / 1000,frequency,0); //inter-word space
-                    System.out.println(i);
+                    temp = saveToneToWav(timing.getInterWordLength() / 1000,frequency,0); //inter-word space
+                    byteDeque.addAll(temp);
                 }
+
+                byte[] buffer = new byte[byteDeque.size()];
+                for(int i = 0; i < byteDeque.size(); i++) {
+                    buffer[i] = byteDeque.remove();
+                }
+                writeSample(raw, buffer);
 
                 closeWavFile(raw);
             }
