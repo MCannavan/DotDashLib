@@ -5,23 +5,16 @@ import java.io.*;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.concurrent.*;
 
 //TODO:
-// - create logging subclass
-//    - include timetable inner class & associated class variables
-//        - potentially use bridge pattern?
 // - fix playMorse() method not working on windows
 // - write unit tests for all methods
 //    - create dummy class & methods for unit testing
 // - code cleanup
 // - implement better exception handling & throwing
 // - remove unused methods
-// - review magic numbers
 // - consider interface (better for abstraction)
-// -
 // - pot. add stereo mode
 //    - virtual positioning?
 
@@ -183,8 +176,6 @@ public class MorsePlayer {
             buffer[2 * i] = (byte) sample;
             buffer[2 * i + 1] = (byte) (sample >> 8); //shift bits rightwards by 8
         }
-        //long actualTime = System.currentTimeMillis();
-        //timeTable.addRecord(expectedTime, actualTime);
         line.write(buffer, 0, buffer.length);
         if(globalDelay > 0) {
             globalDelay -= duration;
@@ -273,35 +264,6 @@ public class MorsePlayer {
         this.translator = translator;
     }
 
-    //TODO put in logging subclass (or remove)
-    /*
-    private static class TimeTable {
-        private final String fileName;
-
-        public TimeTable(String baseFileName) {
-            SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd_HH_mm_ss");
-            String timestamp = formatter.format(new Date());
-            this.fileName = baseFileName + "_" + timestamp + ".csv";
-            initializeFile();
-        }
-        private void initializeFile() {
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName))) {
-                writer.write("Expected Time,Actual Time\n");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-
-        public synchronized void addRecord(long expectedTime, long actualTime) {
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter(fileName, true))) {
-                writer.write(expectedTime + "," + actualTime + "\n");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-     */
-
     private void writeWavHeader(RandomAccessFile raw) throws IOException {
         raw.setLength(0);
         raw.writeBytes("RIFF");
@@ -333,12 +295,14 @@ public class MorsePlayer {
         raw.write(sample);
     }
 
-    private ArrayDeque<Byte> saveToneToWav(double duration, double frequency, double amplitude) {
+    private byte[] saveToneToWav(float duration, double frequency, double amplitude) {
         final double FADE_IN_DURATION = duration * 0.05;
         final double FADE_OUT_DURATION = duration * 0.055;
-        ArrayDeque<Byte> result = new ArrayDeque<Byte>();
 
         int numSamples = (int) (duration * SAMPLE_FREQUENCY);
+        byte[] result = new byte[numSamples*2];
+        int head = 0;
+
         double step = 2 * Math.PI * frequency / SAMPLE_FREQUENCY;
             for (int i = 0; i < numSamples; i++) {
                 float sampleValue;
@@ -356,12 +320,12 @@ public class MorsePlayer {
                 }
                 byte[] temp = ByteBuffer.allocate(2).putShort(Short.reverseBytes((short) sampleValue)).array();
                 for(byte b : temp) {
-                    result.add(b);
+                    result[head] = b;
+                    head++;
                 }
             }
         return result;
     }
-
     public void saveMorseToWav(double volumePercent, String filePath, String fileName, String morse) throws IllegalArgumentException {
         double amplitude = Math.round(volumePercent / 100 * Short.MAX_VALUE);
 
@@ -374,9 +338,12 @@ public class MorsePlayer {
         try(RandomAccessFile raw = new RandomAccessFile(file.getAbsolutePath(), "rw")) {
             writeWavHeader(raw);
             if (translator.validateInput(morse)) {
-                ArrayDeque<Byte> byteDeque = new ArrayDeque<>();
-                ArrayDeque<Byte> temp = new ArrayDeque<>();
+
                 char[][][] phrase = translator.toMorseCharArray(morse);
+                byte[] bytes = new byte[calculateTotalSamples(phrase)];
+                byte[] temp = new byte[0];
+                int head = 0;
+
                 for(int i = 0; i < phrase.length; i++) { //for each word (e.g.: lorem, ipsum, dolor)
                     for(int j = 0; j < phrase[i].length; j++) { //for each letter (e.g.: a,b,c)
                         for(int k = 0; k < phrase[i][j].length; k++) { //for each symbol (e.g.: .,-)
@@ -388,29 +355,77 @@ public class MorsePlayer {
                                     temp = saveToneToWav(timing.getDitLength() / 1000, frequency, amplitude);
                                     break;
                             }
-                            byteDeque.addAll(temp);
-                            temp = saveToneToWav(timing.getIntraCharLength() / 1000,frequency,0); //intra-char space
-                            byteDeque.addAll(temp);
+                            for(byte b : temp) {
+                                bytes[head] = b;
+                                head++;
+                            }
+
+                            if(k < phrase[i][j].length-1) {
+                                temp = saveToneToWav(timing.getIntraCharLength() / 1000, frequency, 0); //intra-char space
+                                for(byte b : temp) {
+                                    bytes[head] = b;
+                                    head++;
+                                }
+                            }
                         }
-                        temp = saveToneToWav(timing.getInterCharLength() / 1000,frequency,0); //inter-char space
-                        byteDeque.addAll(temp);
+                        if(j < phrase[i].length-1) {
+                            temp = saveToneToWav(timing.getInterCharLength() / 1000, frequency, 0); //inter-char space
+                            for(byte b : temp) {
+                                bytes[head] = b;
+                                head++;
+                            }
+                        }
                     }
-                    temp = saveToneToWav(timing.getInterWordLength() / 1000,frequency,0); //inter-word space
-                    byteDeque.addAll(temp);
+                    if(i < phrase.length-1) {
+                        temp = saveToneToWav(timing.getInterWordLength() / 1000, frequency, 0); //inter-word space
+                        for(byte b : temp) {
+                            bytes[head] = b;
+                            head++;
+                        }
+                    }
                 }
-
-                byte[] buffer = new byte[byteDeque.size()];
-                for(int i = 0; i < byteDeque.size(); i++) {
-                    buffer[i] = byteDeque.remove();
-                }
-                writeSample(raw, buffer);
-
+                writeSample(raw, bytes);
                 closeWavFile(raw);
             }
         } catch(IOException e) {
             e.printStackTrace();
         }
     }
+
+    //TODO figure out why method over-estimates sample size;
+    private int calculateTotalSamples(char[][][] phrase) {
+        int total = 0;
+        float dit = timing.getDitLength() / 1000;
+        float dah = timing.getDahLength() / 1000;
+        float intraChar = timing.getIntraCharLength() / 1000;
+        float interChar = timing.getInterCharLength() / 1000;
+        float interWord = timing.getInterWordLength() / 1000;
+        for(int i = 0; i < phrase.length; i++) {
+            for(int j = 0; j < phrase[i].length; j++) {
+                for(int k = 0; k < phrase[i][j].length; k++) {
+                    switch (phrase[i][j][k]) {
+                        case '-':
+                            total += ((int) (dah*SAMPLE_FREQUENCY))*2;
+                            break;
+                        case '.':
+                            total += ((int) (dit*SAMPLE_FREQUENCY))*2;
+                            break;
+                    }
+                    if(k < phrase[i][j].length-1) {
+                        total += ((int) (intraChar*SAMPLE_FREQUENCY))*2;
+                    }
+                }
+                if(j < phrase[i].length-1) {
+                    total += ((int) (interChar*SAMPLE_FREQUENCY))*2;
+                }
+            }
+            if(i < phrase.length-1) {
+                total += ((int) (interWord*SAMPLE_FREQUENCY))*2;
+            }
+        }
+        return total;
+    }
+
     public static void main(String[] args) {
         MorsePlayer morsePlayer = new MorsePlayerBuilder()
                 .withInterruptBehavior(InterruptBehavior.DELAY)
