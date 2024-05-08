@@ -12,17 +12,15 @@ import java.util.concurrent.*;
 //TODO:
 // - fix playMorse() method not working on windows
 // - write unit tests for all methods
-//    - create dummy class & methods for unit testing
 // - code cleanup
 // - implement better exception handling & throwing
-// - remove unused methods
-// consider pre-generating individual letter/symbol sequences (reload on changing IMorseTiming or MorseTranslator)
+// - consider pre-generating individual letter/symbol sequences (reload on changing IMorseTiming or MorseTranslator)
 
 public class MorsePlayer {
 
     private static final float SAMPLE_FREQUENCY = 44100;
     private static final int SAMPLES_SIZE_IN_BITS = 16;
-    private static final int N_CHANNELS = 1; // Number of channels; mono
+    private static final int N_CHANNELS = 1;
     private final SourceDataLine line;
 
     private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
@@ -140,7 +138,6 @@ public class MorsePlayer {
         }
     }
 
-    //TODO finish line closing rework
     private boolean closeLine(boolean forced) {
         if (line.isOpen()) {
             line.drain();
@@ -262,8 +259,6 @@ public class MorsePlayer {
         }
     }
 
-    //TODO: decouple above methods from RandomAccessFile via ByteArrayOutputStream
-
     private byte[] generateTone(float duration, double frequency, double amplitude) {
         final double FADE_IN_DURATION = duration * 0.05;
         final double FADE_OUT_DURATION = duration * 0.055;
@@ -379,10 +374,24 @@ public class MorsePlayer {
                 .build();
 
 
-            String morse = "Lorem";
+            String morse = "Nestled within the bustling marketplace a vibrant tapestry of sights and sounds unfolded" +
+                    " The air hung heavy with the aroma of exotic spices freshly baked bread, and sizzling meats. Merchants" +
+                    " hawked their wares in a cacophony of languages their voices weaving a rhythmic chant as they boasted of" +
+                    " exquisite silks handcrafted jewelry and glistening fruits from distant lands Curious onlookers " +
+                    "adorned in colorful garments meandered through the throngs, their eyes wide with wonder Children " +
+                    "chased after playful pigeons their laughter echoing through the cobblestone streets Above a canopy" +
+                    " of awnings cast a kaleidoscope of shadows sheltering the crowd from the relentless sun In a secluded" +
+                    "corner a lone musician strummed a melancholic melody on his lute The mournful notes seemed to tell a" +
+                    "tale of love lost and journeys undertaken Nearby a group of artisans hammered away at metal their " +
+                    "rhythmic clanging a stark counterpoint to the musicians gentle serenade As the day wore on the shadows" +
+                    " stretched long painting the marketplace in a golden glow. The energy slowly began to wane as the " +
+                    "merchants tallied their earnings and prepared to call it a day Yet, a sense of satisfaction lingered" +
+                    " in the air a testament to the successful exchange of goods and the stories woven within the bustling" +
+                    " marketplace";
 
         try {
-            morsePlayer.generateMorseAudio(morse,100);
+            ByteArrayOutputStream audio = morsePlayer.generateMorseAudio(morse,100);
+            morsePlayer.saveMorseToWavFile(audio, "/Users/Mark/Desktop/MorseRecordings","LongMorse.wav");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
