@@ -27,7 +27,7 @@ currently only available as source code...
 Some basic usage patterns:
 #### Translating text to morse code:
 ```java
-    morseTranslator = new MorseTranslator();
+    MorseTranslator morseTranslator = new MorseTranslator();
     morseTranslator.addMap(CharacterSet.LATIN.getCharacterSet());
     
     System.out.println(morseTranslator.toMorseString("Lorem Ipsum"));
@@ -53,13 +53,14 @@ Some basic usage patterns:
     IMorseTiming timing = MorseTimingFactory.createParisTimingFromWpm(15);
 
     //A custom translator object
-    MorseTranslator
+    Morse Translator morseTranslator = new MorseTranslator();
+    morseTranslator.addMap(CharacterSet.LATIN.getCharacterSet());
 
     MorsePlayer player = new MorsePlayer.MorsePlayerBuilder()
         .withFrequency(700) //pitch, default is 750
         .withTiming(timing) //timing object, default to a PARIS timing of 20 wpm
-        .withTranslator(translator) //translator object, default with latin alphabet, arabic numerals, & punctuation
-        .build()
+        .withTranslator(translator) //translator object, default to a translator with latin alphabet, arabic numerals, & punctuation
+        .build();
 
 ```
 #
