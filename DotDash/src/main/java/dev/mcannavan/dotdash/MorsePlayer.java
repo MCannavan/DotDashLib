@@ -2,8 +2,10 @@ package dev.mcannavan.dotdash;
 
 import javax.sound.sampled.*;
 import java.io.*;
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
-import java.util.ArrayDeque;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.concurrent.*;
 
@@ -14,9 +16,7 @@ import java.util.concurrent.*;
 // - code cleanup
 // - implement better exception handling & throwing
 // - remove unused methods
-// - consider interface (better for abstraction)
-// - pot. add stereo mode
-//    - virtual positioning?
+// consider pre-generating individual letter/symbol sequences (reload on changing IMorseTiming or MorseTranslator)
 
 public class MorsePlayer {
 
@@ -24,8 +24,6 @@ public class MorsePlayer {
     private static final int SAMPLES_SIZE_IN_BITS = 16;
     private static final int N_CHANNELS = 1; // Number of channels; mono
     private final SourceDataLine line;
-
-    //private final TimeTable timeTable = new TimeTable("MorseEpochs");
 
     private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
     private final ArrayList<Future<?>> scheduledFutures = new ArrayList<>();
@@ -35,6 +33,7 @@ public class MorsePlayer {
     private double frequency; //Tone frequency in Hertz (Hz)
     private int globalDelay = 0;
     private InterruptBehavior interruptBehavior = InterruptBehavior.NONE;
+    private RandomAccessFile raw;
 
     private enum InterruptBehavior { //enum for interrupt behavior of playMorse() calls
         NONE, //calls will be ignored if currently playing
@@ -121,6 +120,14 @@ public class MorsePlayer {
 
     public void setInterruptBehavior(InterruptBehavior behavior) {
         this.interruptBehavior = behavior;
+    }
+
+    public MorseTranslator getTranslator() {
+        return translator;
+    }
+
+    public void setTranslator(MorseTranslator translator) {
+        this.translator = translator;
     }
 
     private boolean openLine() throws LineUnavailableException {
@@ -217,7 +224,6 @@ public class MorsePlayer {
         }
         try {
             openLine();
-            System.out.println("success");
             if (translator.validateInput(morse)) {
                 char[][][] phrase = translator.toMorseCharArray(morse);
                 for (int i = 0; i < phrase.length; i++) { //for each word
@@ -256,14 +262,6 @@ public class MorsePlayer {
         }
     }
 
-    public MorseTranslator getTranslator() {
-        return translator;
-    }
-
-    public void setTranslator(MorseTranslator translator) {
-        this.translator = translator;
-    }
-
     private void writeWavHeader(RandomAccessFile raw) throws IOException {
         raw.setLength(0);
         raw.writeBytes("RIFF");
@@ -283,16 +281,16 @@ public class MorsePlayer {
 
     private static void closeWavFile(RandomAccessFile raw) throws IOException {
         raw.seek(4); // bytes 4-8: total file size
+        System.out.println("old method Total Size:"+( raw.length() - 8));
         raw.writeInt(Integer.reverseBytes((int) raw.length() - 8)); //size of the total file subtract 8 bytes
         raw.seek(40); // bytes 40-44: data section size
+        System.out.println("old method Data Section:"+( raw.length() - 44));
         raw.writeInt(Integer.reverseBytes((int) raw.length() - 44)); //size of data section (total size subtract the header size
         raw.close();
-
-        System.out.println("Finished writing file ");
     }
 
-    private static void writeSample(RandomAccessFile raw, byte[] sample) throws IOException {
-        raw.write(sample);
+    private static void writeSample(RandomAccessFile raw, byte[] samples) throws IOException {
+        raw.write(samples);
     }
 
     private byte[] saveToneToWav(float duration, double frequency, double amplitude) {
@@ -326,19 +324,17 @@ public class MorsePlayer {
             }
         return result;
     }
-    public void saveMorseToWav(double volumePercent, String filePath, String fileName, String morse) throws IllegalArgumentException {
+    public void saveMorseToWav(String filePath, double volumePercent, String fileName, String morse) throws IllegalArgumentException {
         double amplitude = Math.round(volumePercent / 100 * Short.MAX_VALUE);
 
-        fileName = !fileName.endsWith(".wav") ? fileName.concat(".wav") : fileName; //add .wav if not already included
-        filePath = !filePath.endsWith(File.separator) ? filePath.concat(File.separator) : filePath;// add file separator to end of filepath if not already included
-
+        fileName = !fileName.endsWith(".wav") ? fileName.concat(".wav") : fileName; //append .wav if not already included
+        filePath = !filePath.endsWith(File.separator) ? filePath.concat(File.separator) : filePath;// append file separator if not already included
 
         filePath = filePath.concat(fileName);
         File file = new File(filePath);
         try(RandomAccessFile raw = new RandomAccessFile(file.getAbsolutePath(), "rw")) {
             writeWavHeader(raw);
             if (translator.validateInput(morse)) {
-
                 char[][][] phrase = translator.toMorseCharArray(morse);
                 byte[] bytes = new byte[calculateTotalSamples(phrase)];
                 byte[] temp = new byte[0];
@@ -384,15 +380,18 @@ public class MorsePlayer {
                         }
                     }
                 }
+                System.out.println("CALCULATED "+calculateTotalSamples(phrase));
+                System.out.println("ACTUAL "+bytes.length);
                 writeSample(raw, bytes);
+                System.out.println("old method final size: "+raw.length());
                 closeWavFile(raw);
+
             }
         } catch(IOException e) {
             e.printStackTrace();
         }
     }
 
-    //TODO figure out why method over-estimates sample size;
     private int calculateTotalSamples(char[][][] phrase) {
         int total = 0;
         float dit = timing.getDitLength() / 1000;
@@ -400,6 +399,7 @@ public class MorsePlayer {
         float intraChar = timing.getIntraCharLength() / 1000;
         float interChar = timing.getInterCharLength() / 1000;
         float interWord = timing.getInterWordLength() / 1000;
+
         for(int i = 0; i < phrase.length; i++) {
             for(int j = 0; j < phrase[i].length; j++) {
                 for(int k = 0; k < phrase[i][j].length; k++) {
@@ -426,42 +426,147 @@ public class MorsePlayer {
         return total;
     }
 
+
+    //------------------------------
+
+    //TODO: decouple above methods from RandomAccessFile via ByteArrayOutputStream
+
+    private byte[] generateTone(float duration, double frequency, double amplitude) {
+        final double FADE_IN_DURATION = duration * 0.05;
+        final double FADE_OUT_DURATION = duration * 0.055;
+
+        int numSamples = (int) (duration * SAMPLE_FREQUENCY);
+        byte[] result = new byte[numSamples*2];
+        int head = 0;
+
+        double step = 2 * Math.PI * frequency / SAMPLE_FREQUENCY;
+        for (int i = 0; i < numSamples; i++) {
+            float sampleValue;
+            if(amplitude > 0) {
+                double fade = 1.0;
+
+                if (i < FADE_IN_DURATION * SAMPLE_FREQUENCY) {
+                    fade = i / (FADE_IN_DURATION * SAMPLE_FREQUENCY);
+                } else if (i > numSamples - (FADE_OUT_DURATION * SAMPLE_FREQUENCY)) {
+                    fade = 1.0 - ((i - (numSamples - (FADE_OUT_DURATION * SAMPLE_FREQUENCY))) / (FADE_OUT_DURATION * SAMPLE_FREQUENCY));
+                }
+                sampleValue = (float) (amplitude * Math.sin(i * step) * fade);
+            } else {
+                sampleValue = 0;
+            }
+            byte[] temp = ByteBuffer.allocate(2).putShort(Short.reverseBytes((short) sampleValue)).array();
+            for(byte b : temp) {
+                result[head] = b;
+                head++;
+            }
+        }
+        return result;
+    }
+
+    //TODO Find out where 20 missing bytes are from when converting this method to wav file (where did they go???)
+    public ByteArrayOutputStream generateMorseAudio(String morse, double volumePercent) throws IllegalArgumentException, IOException {
+        ByteArrayOutputStream audioStream = new ByteArrayOutputStream();
+
+        double amplitude = Math.round(volumePercent / 100 * Short.MAX_VALUE);
+
+        if (translator.validateInput(morse)) {
+            char[][][] phrase = translator.toMorseCharArray(morse);
+            int head = 0;
+
+            for(int i = 0; i < phrase.length; i++) { //for each word (e.g.: lorem, ipsum, dolor)
+                for(int j = 0; j < phrase[i].length; j++) { //for each letter (e.g.: a,b,c)
+                    for(int k = 0; k < phrase[i][j].length; k++) { //for each symbol (e.g.: .,-)
+                        switch (phrase[i][j][k]) {
+                            case '-':
+                                audioStream.write(generateTone(timing.getDahLength() / 1000, frequency, amplitude));
+                                break;
+                            case '.':
+                                audioStream.write(generateTone(timing.getDitLength() / 1000, frequency, amplitude));
+                                break;
+                        }
+                        if(k < phrase[i][j].length-1) {
+                            audioStream.write(generateTone(timing.getIntraCharLength() / 1000, frequency, 0)); //intra-char space
+                        }
+                    }
+                    if(j < phrase[i].length-1) {
+                        audioStream.write(generateTone(timing.getInterCharLength() / 1000, frequency, 0)); //inter-char space
+                    }
+                }
+                if(i < phrase.length-1) {
+                    audioStream.write(generateTone(timing.getInterWordLength() / 1000, frequency, 0)); //inter-word space
+                }
+            }
+
+            return audioStream;
+        } else  {
+            throw new IllegalArgumentException("Invalid Morse Code");
+        }
+
+    }
+
+    private byte[] bigIntToByteArray( final int i ) {
+        BigInteger bigInt = BigInteger.valueOf(i);
+        return bigInt.toByteArray();
+    }
+
     public static void main(String[] args) {
         MorsePlayer morsePlayer = new MorsePlayerBuilder()
                 .withInterruptBehavior(InterruptBehavior.DELAY)
                 .build();
 
-        String morse = "dui faucibus in ornare quam viverra orci sagittis eu volutpat odio " +
-                "facilisis mauris sit amet massa vitae tortor condimentum lacinia quis vel " +
-                "eros donec ac odio tempor orci dapibus ultrices in iaculis nunc sed augue " +
-                "lacus viverra vitae congue eu consequat ac felis donec et odio pellentesque " +
-                "diam volutpat commodo sed egestas egestas fringilla phasellus faucibus scelerisque " +
-                "eleifend donec pretium vulputate sapien nec sagittis aliquam malesuada bibendum " +
-                "arcu vitae elementum curabitur vitae nunc sed velit dignissim sodales ut eu " +
-                "sem integer vitae justo eget magna fermentum iaculis eu non diam phasellus " +
-                "vestibulum lorem sed risus ultricies tristique nulla aliquet enim tortor at " +
-                "auctor urna nunc id cursus metus aliquam eleifend mi in nulla posuere sollicitudin " +
-                "aliquam ultrices sagittis orci a scelerisque purus semper eget duis at tellus " +
-                "at urna condimentum mattis pellentesque id nibh tortor id aliquet lectus proin " +
-                "nibh nisl condimentum id venenatis a condimentum vitae sapien pellentesque " +
-                "habitant morbi tristique senectus et netus et malesuada fames ac turpis " +
-                "egestas sed tempus urna et pharetra pharetra massa massa ultricies mi quis " +
-                "hendrerit dolor magna eget est lorem ipsum dolor sit amet consectetur adipiscing " +
-                "elit pellentesque habitant morbi tristique senectus et netus et malesuada " +
-                "fames ac turpis egestas integer eget aliquet nibh praesent tristique magna " +
-                "sit amet purus gravida quis blandit turpis cursus in hac habitasse platea " +
-                "dictumst quisque sagittis purus sit amet volutpat consequat mauris nunc congue " +
-                "nisi vitae suscipit tellus mauris a diam maecenas sed enim ut sem viverra aliquet " +
-                "eget sit amet tellus cras adipiscing enim eu turpis egestas pretium aenean pharetra " +
-                "magna ac placerat vestibulum lectus mauris ultrices eros in cursus turpis massa " +
-                "tincidunt dui ut ornare lectus sit amet est placerat in egestas erat imperdiet " +
-                "sed euismod nisi porta lorem mollis aliquam ut porttitor leo a diam sollicitudin";
 
-        //morse = "lorem ipsum dolor sit amet";
+            String morse = " SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS SOS";
 
-        morsePlayer.saveMorseToWav(100,"DotDash/src/test/","test",morse);
-        //morsePlayer.playMorse(100,"Lorem ipsum dolor sit amet, consectetur adipiscing");
-        //morsePlayer.playMorse(100, 5000,"OOOOO");
+        //morsePlayer.saveMorseToWav("/Users/Mark/Desktop/MorseRecordings", 100, "test",morse);
+        ByteArrayOutputStream audio = new ByteArrayOutputStream();
+        try {
+            audio = morsePlayer.generateMorseAudio(morse,100);
+
+            double silenceDuration = 0.1; // Duration of silence in seconds (adjust as needed)
+            int silenceSamples = (int) (silenceDuration * SAMPLE_FREQUENCY);
+            byte[] silenceBuffer = new byte[silenceSamples * 2]; // Multiply by 2 for 16-bit samples
+
+            // Combine silence and Morse code audio
+            byte[] audioWithSilence = new byte[audio.size() + 2 * silenceSamples];
+            System.arraycopy(silenceBuffer, 0, audioWithSilence, 0, silenceSamples);
+            System.arraycopy(audio.toByteArray(), 0, audioWithSilence, silenceSamples, audio.size());
+            System.arraycopy(silenceBuffer, 0, audioWithSilence, silenceSamples + audio.size(), silenceSamples);
+
+            byte[] audioData = audio.toByteArray();
+            ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(audioData);
+
+            // Assuming PCM format... adjust if needed
+            AudioFormat audioFormat = new AudioFormat(44100.0f, 16, 1, true, false);
+
+            DataLine.Info info = new DataLine.Info(SourceDataLine.class, audioFormat);
+            SourceDataLine sourceDataLine = (SourceDataLine) AudioSystem.getLine(info);
+            sourceDataLine.open(audioFormat);
+            sourceDataLine.start();
+
+            // Read and stream the audio data to the output line
+            int numBytesRead = 0;
+            byte[] buffer = new byte[2048]; // Adjust buffer size as needed
+            while ((numBytesRead = byteArrayInputStream.read(buffer)) != -1) {
+                sourceDataLine.write(buffer, 0, numBytesRead);
+            }
+            if (byteArrayInputStream.available() > 0) {
+                int remainingBytes = byteArrayInputStream.available();
+                byte[] lastBuffer = new byte[remainingBytes];
+                byteArrayInputStream.read(lastBuffer);
+                sourceDataLine.write(lastBuffer, 0, remainingBytes);
+            }
+
+
+
+            sourceDataLine.drain();
+            sourceDataLine.close();
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } catch (LineUnavailableException e) {
+            throw new RuntimeException(e);
+        }
+
 
     }
 }

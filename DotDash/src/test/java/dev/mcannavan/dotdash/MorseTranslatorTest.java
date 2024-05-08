@@ -10,7 +10,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class MorseTranslatorTest {
     private MorseTranslator morseTranslator;
-
     @BeforeEach
     void setUp() {
         morseTranslator = new MorseTranslator();
@@ -78,11 +77,24 @@ class MorseTranslatorTest {
                 }
         };
         assertArrayEquals(expectedResult2, morseTranslator.toMorseCharArray("Lorem Ipsum"));
+
+        assertArrayEquals(new char[1][0][0], morseTranslator.toMorseCharArray(""));
+    }
+
+    @Test
+    void toMorse_inputInvalidText_returnsException() {
+        assertThrows(IllegalArgumentException.class, () -> morseTranslator.toMorseCharArray("Lorem Ipsum"));
     }
 
     @Test
     void toMorseString_inputValidText_returnsHumanReadableString() {
         String expectedResult = ".- / -... // .- / -.-.";
         assertEquals(expectedResult, morseTranslator.toMorseString("AB AC"));
+        assertEquals("", morseTranslator.toMorseString(""));
+    }
+
+    @Test
+    void toMorseString_inputInvalidText_returnsException() {
+        assertThrows(IllegalArgumentException.class, () -> morseTranslator.toMorseString("ABCDE"));
     }
 }
