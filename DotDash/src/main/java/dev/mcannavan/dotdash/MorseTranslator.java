@@ -11,6 +11,29 @@ import java.util.Map;
  */
 public class MorseTranslator {
 
+
+
+    private String wordSeperator = " / ";
+
+    private String letterSeperator = " ";
+
+    public String getWordSeperator() {
+        return wordSeperator;
+    }
+
+    public void setWordSeperator(String wordSeperator) {
+        this.wordSeperator = wordSeperator;
+    }
+
+    public String getLetterSeperator() {
+        return letterSeperator;
+    }
+
+    public void setLetterSeperator(String letterSeperator) {
+        this.letterSeperator = letterSeperator;
+    }
+
+
     /**
      * A map of characters and their morse code equivalents.
      */

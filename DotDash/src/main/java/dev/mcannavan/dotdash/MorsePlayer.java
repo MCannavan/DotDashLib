@@ -7,9 +7,11 @@ import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.*;
 
-//TODO:
+//TODO
 // - fix playMorse() method not working on windows
 // - write unit tests for all methods
 // - code cleanup
@@ -26,13 +28,18 @@ public class MorsePlayer {
     private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
     private final ArrayList<Future<?>> scheduledFutures = new ArrayList<>();
     private final ArrayList<Future<?>> discardedFutures = new ArrayList<>();
+    
     private MorseTranslator translator;
     private IMorseTiming timing;
     private double frequency; //Tone frequency in Hertz (Hz)
+    
     private int globalDelay = 0;
-    private InterruptBehavior interruptBehavior = InterruptBehavior.NONE;
-    private RandomAccessFile raw;
 
+    private InterruptBehavior interruptBehavior = InterruptBehavior.NONE;
+
+
+    private HashMap<Character,byte[]> pregeneratedChars = new HashMap<Character,byte[]>();
+    
     private enum InterruptBehavior { //enum for interrupt behavior of playMorse() calls
         NONE, //calls will be ignored if currently playing
         DELAY, //new calls will be delayed until current call is finished
@@ -43,7 +50,7 @@ public class MorsePlayer {
         try {
             line = AudioSystem.getSourceDataLine(new AudioFormat(
                     SAMPLE_FREQUENCY, 16,
-                    1, true, false));
+                    N_CHANNELS, true, false));
         } catch (LineUnavailableException e) {
             throw new RuntimeException(e);
         }
@@ -126,6 +133,11 @@ public class MorsePlayer {
 
     public void setTranslator(MorseTranslator translator) {
         this.translator = translator;
+        try {
+            pregenerateCharacters();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private boolean openLine() throws LineUnavailableException {
@@ -186,13 +198,13 @@ public class MorsePlayer {
         }
     }
 
-    public void playMorse(double volumePercent, String morse) {
+    private void playMorse(double volumePercent, String morse) {
         playMorse(volumePercent, 0, morse);
     }
 
     //TODO:
     // - find out why this doesn't function on Windows, saveToWav works as an alternative
-    public void playMorse(double volumePercent, int initialDelay, String morse) throws IllegalArgumentException {
+    private void playMorse(double volumePercent, int initialDelay, String morse) throws IllegalArgumentException {
         double amplitude = Math.round(volumePercent / 100 * Short.MAX_VALUE);
         int delayTotal = initialDelay;
 
@@ -250,7 +262,7 @@ public class MorsePlayer {
                 } //end for each word
 
             } else {
-                throw new IllegalArgumentException("Invalid morse code");
+                throw new IllegalArgumentException("Invalid morse code character in string");
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -291,6 +303,45 @@ public class MorsePlayer {
         return result;
     }
 
+    //TODO
+    // test method functionality
+    // benchmark speed compared to on demand generation
+    private void pregenerateCharacters() throws IOException {
+        pregeneratedChars = null;
+        HashMap<Character,byte[]> result = new HashMap<>();
+        byte[][] chars = new byte[this.translator.getMap().size()][];
+        for (Map.Entry<Character, String> entry : translator.getMap().entrySet()) {
+            Character key = entry.getKey();
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+            
+            char[] temp = translator.toMorseCharArray(key.toString())[0][0];
+            for(int i = 0; i < temp.length; i++) {
+                switch (temp[i]) { //100 amplitude, to be scaled in audio generation method
+                    case '-':
+                        bytes.write(generateTone(timing.getDahLength() / 1000, frequency, 100));
+                        break;
+                    case '.':
+                        bytes.write(generateTone(timing.getDitLength() / 1000, frequency, 100));
+                        break;
+                }
+                if(i < temp.length-1) {
+                    bytes.write(generateTone(timing.getIntraCharLength() / 1000, frequency, 0)); //intra-char space
+                }
+            }
+            result.put(key,bytes.toByteArray());
+        }
+        pregeneratedChars = result;
+    }
+
+    /**
+     * Generates a {@code ByteArrayOutputStream} of audio data from a given {@code String} of morse
+     *
+     * @param morse the text to generate from, as a {@code String}
+     * @param volumePercent the percent volume of the generated audio, as a {@code double }
+     * @return a {@code ByteArrayOutputStream} containing PCM format audio
+     * @throws IllegalArgumentException if the input contains a character that is not in the character map of the {@link MorseTranslator}
+     * @throws IOException if an IO error occurs
+     */
     public ByteArrayOutputStream generateMorseAudio(String morse, double volumePercent) throws IllegalArgumentException, IOException {
         ByteArrayOutputStream audioStream = new ByteArrayOutputStream();
 
