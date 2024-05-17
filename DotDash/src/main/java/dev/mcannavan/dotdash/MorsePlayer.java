@@ -5,6 +5,7 @@ import java.io.*;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -134,9 +135,10 @@ public class MorsePlayer {
     public void setTranslator(MorseTranslator translator) {
         this.translator = translator;
         try {
-            pregenerateCharacters();
+            throw new  IOException("");
+            //pregenerateCharacters();
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            //throw new RuntimeException(e);
         }
     }
 
@@ -376,8 +378,6 @@ public class MorsePlayer {
             }
 
 
-            saveMorseToWavFile(audioStream,"/Users/Mark/Desktop/MorseRecordings/","GenTest2");
-
             return audioStream;
         } else  {
             throw new IllegalArgumentException("Invalid Morse Code");
@@ -387,8 +387,11 @@ public class MorsePlayer {
 
     public void saveMorseToWavFile(ByteArrayOutputStream audioStream, String filePath, String fileName) throws IOException {
         fileName = !fileName.endsWith(".wav") ? fileName.concat(".wav") : fileName; //append .wav if not already included
-        filePath = !filePath.endsWith(File.separator) ? filePath.concat(File.separator) : filePath;// append file separator if not already included
+        //filePath = !filePath.endsWith(File.separator) ? filePath.concat(File.separator) : filePath;// append file separator if not already included
 
+        Path relativePath = Paths.get(filePath, fileName);
+
+        Path absolutePath = relativePath.toAbsolutePath().normalize();
 
         int dataSize = audioStream.size();
         byte[] temp = audioStream.toByteArray();
@@ -410,7 +413,7 @@ public class MorsePlayer {
         audioStream.write(intToByteArray(Integer.reverseBytes(dataSize + 44))); //comparing the hex values wih the original method there seems to be a descrepancy here, but it doesn't seem to affect it functioning
         audioStream.write(temp);
 
-        try(OutputStream outputStream = Files.newOutputStream(Paths.get(filePath+fileName))) {
+        try(OutputStream outputStream = Files.newOutputStream(absolutePath)) {
             audioStream.writeTo(outputStream);
         }
     }
@@ -442,7 +445,7 @@ public class MorsePlayer {
 
         try {
             ByteArrayOutputStream audio = morsePlayer.generateMorseAudio(morse,100);
-            morsePlayer.saveMorseToWavFile(audio, "/Users/Mark/Desktop/MorseRecordings","LongMorse.wav");
+            morsePlayer.saveMorseToWavFile(audio, "DotDash/src/test/java/dev/mcannavan/dotdash/morseSamples/","LongMorse2.wav");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
