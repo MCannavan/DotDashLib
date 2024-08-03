@@ -8,6 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.*;
@@ -37,7 +38,6 @@ public class MorsePlayer {
     private int globalDelay = 0;
 
     private InterruptBehavior interruptBehavior = InterruptBehavior.NONE;
-
 
     private HashMap<Character,byte[]> pregeneratedChars = new HashMap<Character,byte[]>();
     
@@ -100,6 +100,11 @@ public class MorsePlayer {
             morsePlayer.setTiming(timing);
             morsePlayer.setFrequency(frequency);
             morsePlayer.setInterruptBehavior(interruptBehavior);
+            try {
+                morsePlayer.generateCharacters();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
             return morsePlayer;
         }
     }
@@ -110,6 +115,11 @@ public class MorsePlayer {
 
     public void setTiming(IMorseTiming timing) {
         this.timing = timing;
+        try {
+            generateCharacters();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public double getFrequency() {
@@ -136,7 +146,6 @@ public class MorsePlayer {
         this.translator = translator;
         try {
             throw new  IOException("");
-            //pregenerateCharacters();
         } catch (IOException e) {
             //throw new RuntimeException(e);
         }
@@ -192,7 +201,7 @@ public class MorsePlayer {
             }
             short sample = (short) (amplitude * Math.sin(i * step) * fade);
             buffer[2 * i] = (byte) sample;
-            buffer[2 * i + 1] = (byte) (sample >> 8); //shift bits rightwards by 8
+            buffer[2 * i + 1] = (byte) (sample >> 8); //shift bits rightwards by 8 for monotone
         }
         line.write(buffer, 0, buffer.length);
         if(globalDelay > 0) {
@@ -204,8 +213,7 @@ public class MorsePlayer {
         playMorse(volumePercent, 0, morse);
     }
 
-    //TODO:
-    // - find out why this doesn't function on Windows, saveToWav works as an alternative
+    //TODO: find out why this doesn't function on Windows, saveToWav works as an alternative
     private void playMorse(double volumePercent, int initialDelay, String morse) throws IllegalArgumentException {
         double amplitude = Math.round(volumePercent / 100 * Short.MAX_VALUE);
         int delayTotal = initialDelay;
@@ -244,23 +252,23 @@ public class MorsePlayer {
                                 case '-':
                                     submitWithAutoRemoval(() -> playTone(timing.getDahLength() / 1000, //convert Ms to seconds
                                             frequency, amplitude), delayTotal);
-                                    delayTotal += timing.getDahLength();
+                                    delayTotal += (int) timing.getDahLength();
                                     break;
                                 case '.':
                                     submitWithAutoRemoval(() -> playTone(timing.getDitLength() / 1000, //convert Ms to seconds
                                             frequency, amplitude), delayTotal);
-                                    delayTotal += timing.getDitLength();
+                                    delayTotal += (int) timing.getDitLength();
                                     break;
                             }
                             if (k < phrase[i][j].length - 1) {
-                                delayTotal += timing.getIntraCharLength();
+                                delayTotal += (int) timing.getIntraCharLength();
                             }
                         } //end for each symbol
                         if (j < phrase[i].length - 1) {
-                            delayTotal += timing.getInterCharLength();
+                            delayTotal += (int) timing.getInterCharLength();
                         }
                     } //end for each letter
-                    delayTotal += timing.getInterWordLength();
+                    delayTotal += (int) timing.getInterWordLength();
                 } //end for each word
 
             } else {
@@ -296,7 +304,7 @@ public class MorsePlayer {
             } else {
                 sampleValue = 0;
             }
-            byte[] temp = ByteBuffer.allocate(2).putShort(Short.reverseBytes((short) sampleValue)).array();
+            byte[] temp = ByteBuffer.allocate(2).putShort(Short.reverseBytes((short) Math.round(sampleValue))).array();
             for(byte b : temp) {
                 result[head] = b;
                 head++;
@@ -308,7 +316,7 @@ public class MorsePlayer {
     //TODO
     // test method functionality
     // benchmark speed compared to on demand generation
-    private void pregenerateCharacters() throws IOException {
+    private void generateCharacters() throws IOException {
         pregeneratedChars = null;
         HashMap<Character,byte[]> result = new HashMap<>();
         byte[][] chars = new byte[this.translator.getMap().size()][];
@@ -344,15 +352,16 @@ public class MorsePlayer {
      * @throws IllegalArgumentException if the input contains a character that is not in the character map of the {@link MorseTranslator}
      * @throws IOException if an IO error occurs
      */
+    //TODO: figure out why start and end are being cut off
+    //turns out it might just be a problem with the audio player, still worth looking into
     public ByteArrayOutputStream generateMorseAudio(String morse, double volumePercent) throws IllegalArgumentException, IOException {
         ByteArrayOutputStream audioStream = new ByteArrayOutputStream();
-
         double amplitude = Math.round(volumePercent / 100 * Short.MAX_VALUE);
 
         if (translator.validateInput(morse)) {
             char[][][] phrase = translator.toMorseCharArray(morse);
             int head = 0;
-
+            //audioStream.write(generateTone(timing.getDahLength() / 1000, frequency, 0)); //workaround for start being cut off
             for(int i = 0; i < phrase.length; i++) { //for each word (e.g.: lorem, ipsum, dolor)
                 for(int j = 0; j < phrase[i].length; j++) { //for each letter (e.g.: a,b,c)
                     for(int k = 0; k < phrase[i][j].length; k++) { //for each symbol (e.g.: .,-)
@@ -376,13 +385,19 @@ public class MorsePlayer {
                     audioStream.write(generateTone(timing.getInterWordLength() / 1000, frequency, 0)); //inter-word space
                 }
             }
+            //audioStream.write(generateTone(timing.getInterWordLength() / 1000, frequency, 0)); //workaround to morse being cut off at end
+
+            //seemingly has no effect, kept in just in case
+            //int paddingBytes = (16 - (audioStream.size() % 16)) % 16;
+            //byte[] padding = new byte[paddingBytes];
+            //Arrays.fill(padding, (byte) 0);
+            //audioStream.write(padding);
 
 
             return audioStream;
         } else  {
             throw new IllegalArgumentException("Invalid Morse Code");
         }
-
     }
 
     public void saveMorseToWavFile(ByteArrayOutputStream audioStream, String filePath, String fileName) throws IOException {
@@ -395,6 +410,7 @@ public class MorsePlayer {
 
         int dataSize = audioStream.size();
         byte[] temp = audioStream.toByteArray();
+
 
         audioStream.reset();
 
@@ -410,7 +426,7 @@ public class MorsePlayer {
         audioStream.write(intToByteArray(Short.reverseBytes((short)(N_CHANNELS * SAMPLES_SIZE_IN_BITS / 8))));
         audioStream.write(intToByteArray(Short.reverseBytes((short) SAMPLES_SIZE_IN_BITS)));
         audioStream.write("data".getBytes());
-        audioStream.write(intToByteArray(Integer.reverseBytes(dataSize + 44))); //comparing the hex values wih the original method there seems to be a descrepancy here, but it doesn't seem to affect it functioning
+        audioStream.write(intToByteArray(Integer.reverseBytes(dataSize + 44))); //comparing the hex values wih the original method there is a descrepancy here, but it doesn't seem to affect it functioning
         audioStream.write(temp);
 
         try(OutputStream outputStream = Files.newOutputStream(absolutePath)) {
@@ -443,10 +459,52 @@ public class MorsePlayer {
                     " in the air a testament to the successful exchange of goods and the stories woven within the bustling" +
                     " marketplace";
 
+            String shortMorse = "SOS";
+
+            String[] alphabetTest = {
+                    "A",
+                    "B",
+                    "C",
+                    "D",
+                    "E",
+                    "F",
+                    "G",
+                    "H",
+                    "I",
+                    "J",
+                    "K",
+                    "L",
+                    "M",
+                    "N",
+                    "O",
+                    "P",
+                    "Q",
+                    "R",
+                    "S",
+                    "T",
+                    "U",
+                    "V",
+                    "W",
+                    "X",
+                    "Y",
+                    "Z",
+            };
+
         try {
-            ByteArrayOutputStream audio = morsePlayer.generateMorseAudio(morse,100);
-            morsePlayer.saveMorseToWavFile(audio, "DotDash/src/test/java/dev/mcannavan/dotdash/morseSamples/","LongMorse2.wav");
-        } catch (IOException e) {
+            ByteArrayOutputStream audio = morsePlayer.generateMorseAudio(shortMorse,100);
+            morsePlayer.saveMorseToWavFile(audio, "DotDash/src/test/java/dev/mcannavan/dotdash/morseSamples/","shortMorse.wav");
+            audio = morsePlayer.generateMorseAudio(morse,100);
+            morsePlayer.saveMorseToWavFile(audio, "DotDash/src/test/java/dev/mcannavan/dotdash/morseSamples/","LongMorse.wav");
+            for (String item : alphabetTest) {
+                String temp = "";
+                for(char i : morsePlayer.getTranslator().getCharacter(item)) {
+                    temp = temp.concat(String.valueOf(i));
+                }
+                String name = item + "_["+ temp + "].wav";
+                audio = morsePlayer.generateMorseAudio(item,100);
+                morsePlayer.saveMorseToWavFile(audio, "DotDash/src/test/java/dev/mcannavan/dotdash/morseSamples/",name);
+            }
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
 

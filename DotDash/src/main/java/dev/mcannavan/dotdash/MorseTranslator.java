@@ -205,6 +205,14 @@ public class MorseTranslator {
         return count;
     }
 
+    public char[] getCharacter(String character) {
+        return getCharacter(character.charAt(0));
+    }
+
+    public char[] getCharacter(char character) {
+        return characterMap.get(character).toCharArray();
+    }
+
     /**
      * Converts the input text to a {@code char[][][]} of morse code symbols.
      * <ul>
