@@ -5,6 +5,7 @@ import java.io.*;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -12,6 +13,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.*;
+import java.nio.file.AccessDeniedException;
+
 
 //TODO
 // - fix playMorse() method not working on windows
@@ -96,8 +99,8 @@ public class MorsePlayer {
 
         public MorsePlayer build() {
             MorsePlayer morsePlayer = new MorsePlayer();
-            morsePlayer.setTranslator(translator);
             morsePlayer.setTiming(timing);
+            morsePlayer.setTranslator(translator);
             morsePlayer.setFrequency(frequency);
             morsePlayer.setInterruptBehavior(interruptBehavior);
             try {
@@ -128,6 +131,11 @@ public class MorsePlayer {
 
     public void setFrequency(double frequency) {
         this.frequency = frequency;
+        try {
+            generateCharacters();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public InterruptBehavior getInterruptBehavior() {
@@ -145,9 +153,9 @@ public class MorsePlayer {
     public void setTranslator(MorseTranslator translator) {
         this.translator = translator;
         try {
-            throw new  IOException("");
+            generateCharacters();
         } catch (IOException e) {
-            //throw new RuntimeException(e);
+            throw new RuntimeException(e);
         }
     }
 
@@ -317,15 +325,22 @@ public class MorsePlayer {
     // test method functionality
     // benchmark speed compared to on demand generation
     private void generateCharacters() throws IOException {
+        if (timing == null) {
+            return;
+        } else if (translator == null) {
+            return;
+        }
         pregeneratedChars = null;
         HashMap<Character,byte[]> result = new HashMap<>();
-        byte[][] chars = new byte[this.translator.getMap().size()][];
+        //byte[][] chars = new byte[this.translator.getMap().size()][];
         for (Map.Entry<Character, String> entry : translator.getMap().entrySet()) {
             Character key = entry.getKey();
             ByteArrayOutputStream bytes = new ByteArrayOutputStream();
             
             char[] temp = translator.toMorseCharArray(key.toString())[0][0];
             for(int i = 0; i < temp.length; i++) {
+                //System.out.println(i+" ["+temp.length+"]");
+                //System.out.println(temp[i]);
                 switch (temp[i]) { //100 amplitude, to be scaled in audio generation method
                     case '-':
                         bytes.write(generateTone(timing.getDahLength() / 1000, frequency, 100));
@@ -361,7 +376,6 @@ public class MorsePlayer {
         if (translator.validateInput(morse)) {
             char[][][] phrase = translator.toMorseCharArray(morse);
             int head = 0;
-            //audioStream.write(generateTone(timing.getDahLength() / 1000, frequency, 0)); //workaround for start being cut off
             for(int i = 0; i < phrase.length; i++) { //for each word (e.g.: lorem, ipsum, dolor)
                 for(int j = 0; j < phrase[i].length; j++) { //for each letter (e.g.: a,b,c)
                     for(int k = 0; k < phrase[i][j].length; k++) { //for each symbol (e.g.: .,-)
@@ -395,7 +409,7 @@ public class MorsePlayer {
 
 
             return audioStream;
-        } else  {
+        } else {
             throw new IllegalArgumentException("Invalid Morse Code");
         }
     }
@@ -405,7 +419,6 @@ public class MorsePlayer {
         //filePath = !filePath.endsWith(File.separator) ? filePath.concat(File.separator) : filePath;// append file separator if not already included
 
         Path relativePath = Paths.get(filePath, fileName);
-
         Path absolutePath = relativePath.toAbsolutePath().normalize();
 
         int dataSize = audioStream.size();
@@ -413,6 +426,7 @@ public class MorsePlayer {
 
 
         audioStream.reset();
+
 
         audioStream.write("RIFF".getBytes());
         audioStream.write(intToByteArray(Integer.reverseBytes(dataSize+36))); // sound data + 44 header bytes - 8 bytes for previous bytes
@@ -429,8 +443,11 @@ public class MorsePlayer {
         audioStream.write(intToByteArray(Integer.reverseBytes(dataSize + 44))); //comparing the hex values wih the original method there is a descrepancy here, but it doesn't seem to affect it functioning
         audioStream.write(temp);
 
+
         try(OutputStream outputStream = Files.newOutputStream(absolutePath)) {
             audioStream.writeTo(outputStream);
+        } catch (NoSuchFileException exception) { //newOutputStream throws FileNotFound when unable to create or modify a file
+            throw new AccessDeniedException("Insufficient permissions to create or write file at " + absolutePath);
         }
     }
 

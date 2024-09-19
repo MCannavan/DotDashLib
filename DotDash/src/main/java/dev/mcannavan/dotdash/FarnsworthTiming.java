@@ -64,6 +64,7 @@ class FarnsworthTiming implements IMorseTiming {
         interWordLengthMillis = Math.round(7 * fMs);
     }
 
+    //TODO: rework calculations
     public void calculateSpeedFromWpm(float fWpm, float pWpm) throws IllegalArgumentException, ArithmeticException {
         if (pWpm <= 0 || fWpm <= 0) {
             throw new IllegalArgumentException("expected non-negative, non-zero values of pWpm and fWpm. Actual value: pWpm = " + pWpm + ", fWpm = " + fWpm);
