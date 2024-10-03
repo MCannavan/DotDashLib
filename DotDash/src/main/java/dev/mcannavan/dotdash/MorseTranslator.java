@@ -3,6 +3,8 @@ package dev.mcannavan.dotdash;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import com.google.common.collect.ImmutableBiMap;
+
+import java.util.HashMap;
 import java.util.Map;
 
 //TODO add builder pattern
@@ -187,6 +189,18 @@ public class MorseTranslator {
             }
         }
         return true;
+    }
+
+    public Map<Integer,Character> findInvalidSymbols(String text) {
+        text = text.toUpperCase();
+        Map<Integer,Character> result = new HashMap<>();
+        char[] characters = text.toCharArray();
+        for (int i = 0; i < characters.length; i++) {
+            if(!characterMap.containsKey(characters[i]) && !Character.isWhitespace(characters[i])) {
+                result.put(i,characters[i]);
+            }
+        }
+        return result;
     }
 
     public int symbolCount(String text) {
