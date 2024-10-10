@@ -11,11 +11,11 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
-
 //TODO
 // - write unit tests for all methods
 // - code cleanup
 // - implement better exception handling & throwing
+// - add javadocs
 
 public class MorsePlayer {
     private static final float SAMPLE_FREQUENCY = 44100;
@@ -37,7 +37,7 @@ public class MorsePlayer {
 
     }
 
-    //TODO generate a javadoc for the builder class
+
     public static final class MorsePlayerBuilder {
         private static final int DEFAULT_WPM = 20;
         private static final int DEFAULT_FREQUENCY = 750;
@@ -45,8 +45,6 @@ public class MorsePlayer {
         private MorseTranslator translator;
         private IMorseTiming timing;
         private double frequency;
-
-//        private InterruptBehavior interruptBehavior;
 
         public MorsePlayerBuilder() {
             this.timing = null; //Average morse speed and format
@@ -151,6 +149,10 @@ public class MorsePlayer {
     }
 
     private byte[] generateTone(float duration, double frequency, double amplitude) {
+        if(duration <= 0) {
+            throw new IllegalArgumentException("Duration must be greater than 0");
+        }
+
         final double FADE_IN_DURATION = duration * 0.05;
         final double FADE_OUT_DURATION = duration * 0.055;
 
@@ -227,7 +229,7 @@ public class MorsePlayer {
      * Generates a {@code ByteArrayOutputStream} containing a given {@code String} of morse code
      *
      * @param morse the {@code String} to generate audio data from
-     * @param volumePercent the volume of the generated audio data as a {@code int} out of 100
+     * @param volumePercent the volume of the generated audio data as an {@code int} out of 100
      * @return a {@code ByteArrayOutputStream} containing Bytes of morse audio
      * @throws IllegalArgumentException if the given morse contains a character not found in the {@code MorseTranslator} translator
      * @throws IOException if an IO Exception occurs
@@ -325,7 +327,7 @@ public class MorsePlayer {
         audioStream.write(intToByteArray(Short.reverseBytes((short)(N_CHANNELS * SAMPLES_SIZE_IN_BITS / 8))));
         audioStream.write(intToByteArray(Short.reverseBytes((short) SAMPLES_SIZE_IN_BITS)));
         audioStream.write("data".getBytes());
-        audioStream.write(intToByteArray(Integer.reverseBytes(dataSize + 44))); //comparing the hex values wih the original method there is a descrepancy here, but it doesn't seem to affect it functioning
+        audioStream.write(intToByteArray(Integer.reverseBytes(dataSize + 44))); //comparing the hex values wih the original method there is a discrepancy here, but it doesn't seem to affect it functioning
         audioStream.write(temp);
 
         try(OutputStream outputStream = Files.newOutputStream(absolutePath)) {
@@ -339,7 +341,6 @@ public class MorsePlayer {
 
     public static void main(String[] args) {
         MorsePlayer morsePlayer = new MorsePlayerBuilder()
-                //.withInterruptBehavior(InterruptBehavior.DELAY)
                 .build();
 
 

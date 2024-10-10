@@ -15,24 +15,24 @@ public class MorseTranslator {
 
 
 
-    private String wordSeperator = " / ";
+    private String wordSeparator = " / ";
 
-    private String letterSeperator = " ";
+    private String letterSeparator = " ";
 
-    public String getWordSeperator() {
-        return wordSeperator;
+    public String getWordSeparator() {
+        return wordSeparator;
     }
 
-    public void setWordSeperator(String wordSeperator) {
-        this.wordSeperator = wordSeperator;
+    public void setWordSeparator(String wordSeparator) {
+        this.wordSeparator = wordSeparator;
     }
 
-    public String getLetterSeperator() {
-        return letterSeperator;
+    public String getLetterSeparator() {
+        return letterSeparator;
     }
 
-    public void setLetterSeperator(String letterSeperator) {
-        this.letterSeperator = letterSeperator;
+    public void setLetterSeparator(String letterSeparator) {
+        this.letterSeparator = letterSeparator;
     }
 
 
@@ -199,6 +199,22 @@ public class MorseTranslator {
             if(!characterMap.containsKey(characters[i]) && !Character.isWhitespace(characters[i])) {
                 result.put(i,characters[i]);
             }
+        }
+        return result;
+    }
+
+    //TODO add exception handling
+    public String removeInvalidSymbols(String text) {
+        if(validateInput(text)) {
+            return text;
+        }
+        String result = text;
+        Map<Integer,Character> invalidSymbols = findInvalidSymbols(text);
+        for (Map.Entry<Integer,Character> entry : invalidSymbols.entrySet()) {
+            int index = entry.getKey();
+            String first = result.substring(0,index);
+            String second = result.substring(index+1);
+            result = first+second;
         }
         return result;
     }
