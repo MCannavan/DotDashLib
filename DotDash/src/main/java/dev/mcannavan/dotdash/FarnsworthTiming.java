@@ -44,44 +44,43 @@ class FarnsworthTiming implements IMorseTiming {
     }
 
     public void calculateSpeedFromMillis(float fMs, float pMs) throws IllegalArgumentException {
-
-        if (pMs <= 0 || fMs <= 0) {
-            throw new IllegalArgumentException("expected non-negative, non-zero values of pMs and fMs. Actual values: pMs=" + pMs + ", fMs=" + fMs);
+        if (fMs <= 0) {
+            throw new IllegalArgumentException("expected non-negative, non-zero value for fMs, but got " + fMs + ".");
+        } else if (pMs <= 0) {
+            throw new IllegalArgumentException("expected non-negative, non-zero value for pMs, but got " + pMs + ".");
         }
 
-        ParisTiming parisTiming = new ParisTiming();
-        parisTiming.calculateSpeedFromMillis(pMs);
-        ditLengthMillis = parisTiming.getDitLength();
-        dahLengthMillis = parisTiming.getDahLength();
-        intraCharLengthMillis = parisTiming.getIntraCharLength();
-
-        float pWpm = parisTiming.getWpm();
+        float pWpm = (60f * (1f / (pMs / 1000)) / 50f);
         float fWpm = 60 / ((19 * fMs) / 1000f + 37.2f / pWpm);
         this.pWpm = pWpm;
         this.fWpm = fWpm;
+
+        ditLengthMillis = Math.round(pMs);
+        dahLengthMillis = Math.round(3* pMs);
+        intraCharLengthMillis = Math.round(pMs);
 
         interCharLengthMillis = Math.round(3 * fMs);
         interWordLengthMillis = Math.round(7 * fMs);
     }
 
-    //TODO: rework calculations
     public void calculateSpeedFromWpm(float fWpm, float pWpm) throws IllegalArgumentException, ArithmeticException {
-        if (pWpm <= 0 || fWpm <= 0) {
-            throw new IllegalArgumentException("expected non-negative, non-zero values of pWpm and fWpm. Actual value: pWpm = " + pWpm + ", fWpm = " + fWpm);
-        } else if (pWpm/fWpm <= 0.62) { //max ratio fWpm:pWpm is ~ 1.6129 or min pWpm:fWpm = 0.62
-            throw new ArithmeticException("ratio between fWpm and pWpm above maximum ratio ~1.6129. actual: "+pWpm/fWpm);
+        if (fWpm <= 0) {
+            throw new IllegalArgumentException("expected non-negative, non-zero value for fWpm, but got " + fWpm + ".");
+        } else if (pWpm <= 0) {
+            throw new IllegalArgumentException("expected non-negative, non-zero value for pWpm, but got " + pWpm + ".");
         }
 
         this.pWpm = pWpm;
         this.fWpm = fWpm;
 
-        float fMs = (float) (((60 / fWpm) - (37.2 / pWpm)) * 1000) / 19;
+        //float fMs = (float) (((60 / fWpm) - (37.2 / pWpm)) * 1000) / 19;
+        float fMs = (float) 1 / ((fWpm * 50) / 60) * 1000;
         float pMs = (float) 1 / ((pWpm * 50) / 60) * 1000;
-        if (Float.isInfinite(7*fMs) || Float.isInfinite(3*pMs)) {
-            throw new ArithmeticException("floating-point overflow when calculating fMs or pMs." +
-                    "\nfMs: " + fMs + ", pMs: " + pMs +
-                    "\nfWpm: " + fWpm +  ", pWpm: " + pWpm);
-        }
-        calculateSpeedFromMillis(fMs, pMs);
+
+            if (Float.isInfinite(7 * fMs)) {
+                throw new ArithmeticException("floating-point overflow when calculating Farnsworth timing lengths (fMs*7 must be less than Float.MAX_VALUE). fMs: " + fMs + " from fWpm: " + fWpm);
+            } else if (Float.isInfinite(3 * pMs)) {
+                throw new ArithmeticException("floating-point overflow when calculating Paris timing lengths (pMs*3 must be less than Float.MAX_VALUE). pMs: " + pMs + " from pWpm: " + pWpm);
+            }
     }
 }

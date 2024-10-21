@@ -225,6 +225,7 @@ public class MorsePlayer {
         pregeneratedChars = result;
     }
 
+
     /**
      * Generates a {@code ByteArrayOutputStream} containing a given {@code String} of morse code
      *

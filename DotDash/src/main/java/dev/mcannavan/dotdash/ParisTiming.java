@@ -55,8 +55,8 @@ class ParisTiming implements IMorseTiming {
         wpm = (60f * (1f / (ms / 1000)) / 50f);
         ditLengthMillis = Math.round(ms);
         dahLengthMillis = Math.round(ms * 3);
-        interCharLengthMillis = Math.round(ms * 3);
         intraCharLengthMillis = Math.round(ms);
+        interCharLengthMillis = Math.round(ms * 3);
         interWordLengthMillis = Math.round(ms * 7);
     }
 
