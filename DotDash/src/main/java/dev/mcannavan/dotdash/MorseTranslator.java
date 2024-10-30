@@ -13,8 +13,6 @@ import java.util.Map;
  */
 public class MorseTranslator {
 
-
-
     private String wordSeparator = " / ";
 
     private String letterSeparator = " ";
