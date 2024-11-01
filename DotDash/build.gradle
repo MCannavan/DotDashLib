@@ -2,8 +2,7 @@ plugins {
     id 'java-library'
     id 'maven-publish'
 }
-group 'dev.mcannavan'
-version = '1.0.1'
+version = '1.0.2'
 
 repositories {
     mavenCentral()
