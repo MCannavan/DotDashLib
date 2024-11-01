@@ -21,7 +21,33 @@ this library for the niche purpose of playing accurate morse code in pure java.
 - Control over the speed, pitch, & volume of the output
 
 ## Installation
-currently only available as source code...
+For maven, add this to your `pom.xml`
+```xml
+<dependency>
+  <groupId>dev.mcannavan</groupId>
+  <artifactId>dotdash</artifactId>
+</dependency> 
+```
+then run
+```
+$ mvn install
+```
+to install via CLI
+
+Using gradle add these to your build.gradle:
+
+```groovy
+repositories {
+    mavenCentral()
+}
+  
+dependencies {
+    implementation 'dev.mcannavan.dotdash:1.0.0' #for version 1.0.0, adjust accordingly
+}
+
+```
+
+Also available as a .jar file including sources.jar and javadocs.jar from the releases page.
 
 ## Usage
 Some basic usage patterns:
