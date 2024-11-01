@@ -36,13 +36,13 @@ to install via CLI
 
 Using gradle add these to your build.gradle:
 
-```groovy
+```java
 repositories {
     mavenCentral()
 }
   
 dependencies {
-    implementation 'dev.mcannavan.dotdash:1.0.0' #for version 1.0.0, adjust accordingly
+    implementation 'dev.mcannavan.dotdash:1.0.0' //for version 1.0.0, adjust accordingly
 }
 
 ```
