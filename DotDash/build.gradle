@@ -3,7 +3,7 @@ plugins {
     id 'maven-publish'
 }
 group 'dev.mcannavan'
-version = '1.0.0'
+version = '1.0.1'
 
 repositories {
     mavenCentral()
@@ -40,7 +40,7 @@ java {
 publishing {
     repositories {
         maven {
-            name = "githubpackages"
+            name = "GitHubPackages"
             url = "https://maven.pkg.github.com/mcannavan/dotdashlib"
             credentials {
                 username = project.findProperty("gpr.user") ?: System.getenv("USERNAME")
@@ -51,9 +51,26 @@ publishing {
 
     publications {
         gpr(MavenPublication) {
-            groupId 'dev.mcannavan.dotdash'
             artifactId 'dotdash'
             from(components.java)
+            pom {
+                name = "DotDash"
+                description = "A small Java library for handling the translation and audio generation of morse code."
+                url = "https://github.com/MCannavan/DotDashLib"
+                licenses {
+                    license {
+                        name = "MIT License"
+                        url = "https://github.com/MCannavan/DotDashLib/blob/main/LICENSE"
+                    }
+                }
+                developers {
+                    developer {
+                        id = "MCannavan"
+                        name = "Mark Cannavan"
+                        email = "Mark@Mcannavan.dev"
+                    }
+                }
+            }
         }
     }
 }
