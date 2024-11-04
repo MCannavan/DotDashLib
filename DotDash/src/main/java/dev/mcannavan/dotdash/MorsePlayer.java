@@ -304,6 +304,29 @@ public class MorsePlayer {
         }
     }
 
+    public ByteArrayOutputStream generateWavFileData(ByteArrayOutputStream audioStream) throws IOException {
+        ByteArrayOutputStream wavStream = new ByteArrayOutputStream();
+
+        int dataSize = audioStream.size();
+        byte[] temp = audioStream.toByteArray();
+
+        wavStream.write("RIFF".getBytes());
+        wavStream.write(intToByteArray(Integer.reverseBytes(dataSize+36))); // sound data + 44 header bytes - 8 bytes for previous bytes
+        wavStream.write("WAVE".getBytes());
+        wavStream.write("fmt ".getBytes());
+        wavStream.write(intToByteArray(Integer.reverseBytes(SAMPLES_SIZE_IN_BITS)));
+        wavStream.write(intToByteArray(Short.reverseBytes((short) 1)));
+        wavStream.write(intToByteArray(Short.reverseBytes((short) N_CHANNELS)));
+        wavStream.write(intToByteArray(Integer.reverseBytes((int)SAMPLE_FREQUENCY)));
+        wavStream.write(intToByteArray(Integer.reverseBytes((int)SAMPLE_FREQUENCY* SAMPLES_SIZE_IN_BITS * N_CHANNELS / 8)));
+        wavStream.write(intToByteArray(Short.reverseBytes((short)(N_CHANNELS * SAMPLES_SIZE_IN_BITS / 8))));
+        wavStream.write(intToByteArray(Short.reverseBytes((short) SAMPLES_SIZE_IN_BITS)));
+        wavStream.write("data".getBytes());
+        wavStream.write(intToByteArray(Integer.reverseBytes(dataSize))); //comparing the hex values wih the original method there is a discrepancy here, but it doesn't seem to affect it functioning
+        wavStream.write(temp);
+
+        return wavStream;
+    }
 
     public void saveMorseToWavFile(ByteArrayOutputStream audioStream, String filePath, String fileName) throws IOException {
         fileName = !fileName.endsWith(".wav") ? fileName.concat(".wav") : fileName; //append .wav if not already included
@@ -311,28 +334,10 @@ public class MorsePlayer {
         Path relativePath = Paths.get(filePath, fileName);
         Path absolutePath = relativePath.toAbsolutePath().normalize();
 
-        int dataSize = audioStream.size();
-        byte[] temp = audioStream.toByteArray();
-
-        audioStream.reset();
-
-        audioStream.write("RIFF".getBytes());
-        audioStream.write(intToByteArray(Integer.reverseBytes(dataSize+36))); // sound data + 44 header bytes - 8 bytes for previous bytes
-        audioStream.write("WAVE".getBytes());
-        audioStream.write("fmt ".getBytes());
-        audioStream.write(intToByteArray(Integer.reverseBytes(SAMPLES_SIZE_IN_BITS)));
-        audioStream.write(intToByteArray(Short.reverseBytes((short) 1)));
-        audioStream.write(intToByteArray(Short.reverseBytes((short) N_CHANNELS)));
-        audioStream.write(intToByteArray(Integer.reverseBytes((int)SAMPLE_FREQUENCY)));
-        audioStream.write(intToByteArray(Integer.reverseBytes((int)SAMPLE_FREQUENCY* SAMPLES_SIZE_IN_BITS * N_CHANNELS / 8)));
-        audioStream.write(intToByteArray(Short.reverseBytes((short)(N_CHANNELS * SAMPLES_SIZE_IN_BITS / 8))));
-        audioStream.write(intToByteArray(Short.reverseBytes((short) SAMPLES_SIZE_IN_BITS)));
-        audioStream.write("data".getBytes());
-        audioStream.write(intToByteArray(Integer.reverseBytes(dataSize + 44))); //comparing the hex values wih the original method there is a discrepancy here, but it doesn't seem to affect it functioning
-        audioStream.write(temp);
+        ByteArrayOutputStream wavStream = generateWavFileData(audioStream);
 
         try(OutputStream outputStream = Files.newOutputStream(absolutePath)) {
-            audioStream.writeTo(outputStream);
+            wavStream.writeTo(outputStream);
         }
     }
 
