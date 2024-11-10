@@ -4,7 +4,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigInteger;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -26,10 +25,20 @@ public class MorsePlayer {
     private IMorseTiming timing;
     private double frequency; //Tone frequency in Hertz (Hz)
 
+    public WaveGenerator getWaveGenerator() {
+        return waveGenerator;
+    }
 
-    private HashMap<Character,byte[]> pregeneratedChars = new HashMap<Character,byte[]>();
+    public void setWaveGenerator(WaveGenerator waveGenerator) {
+        this.waveGenerator = waveGenerator;
+    }
 
-    private byte[][] pregeneratedSpaces = new byte[2][];
+    private WaveGenerator waveGenerator;
+
+
+    private HashMap<Character,byte[]> pregenChars = new HashMap<Character,byte[]>();
+
+    private byte[][] pregenSpaces = new byte[2][];
 
     private int volumePercent = 100;
 
@@ -37,13 +46,13 @@ public class MorsePlayer {
 
     }
 
-
     public static final class MorsePlayerBuilder {
         private static final int DEFAULT_WPM = 20;
         private static final int DEFAULT_FREQUENCY = 750;
 
         private MorseTranslator translator;
         private IMorseTiming timing;
+        private WaveGenerator waveGenerator = new WaveGenerator();
         private double frequency;
 
         public MorsePlayerBuilder() {
@@ -76,6 +85,10 @@ public class MorsePlayer {
             return this;
         }
 
+        public MorsePlayerBuilder withWaveGenerator(WaveGenerator waveGenerator) {
+            return this;
+        }
+
         public MorsePlayer build() {
             MorsePlayer morsePlayer = new MorsePlayer();
 
@@ -88,6 +101,7 @@ public class MorsePlayer {
             morsePlayer.builderSetTiming(timing);
             morsePlayer.builderSetTranslator(translator);
             morsePlayer.builderSetFrequency(frequency);
+            morsePlayer.setWaveGenerator(waveGenerator);
             try {
                 morsePlayer.generateCharacters(100);
             } catch (IOException e) {
@@ -148,49 +162,13 @@ public class MorsePlayer {
             this.translator = translator;
     }
 
-    private byte[] generateTone(float duration, double frequency, double amplitude) {
-        if(duration <= 0) {
-            throw new IllegalArgumentException("Duration must be greater than 0");
-        }
-
-        final double FADE_IN_DURATION = duration * 0.05;
-        final double FADE_OUT_DURATION = duration * 0.055;
-
-        int numSamples = (int) (duration * SAMPLE_FREQUENCY * N_CHANNELS);
-        byte[] result = new byte[numSamples*2];
-        int head = 0;
-
-        double step = 2 * Math.PI * frequency / SAMPLE_FREQUENCY / N_CHANNELS;
-        for (int i = 0; i < numSamples; i++) {
-            float sampleValue;
-            if(amplitude > 0) {
-                double fade = 1.0;
-
-                if (i < FADE_IN_DURATION * SAMPLE_FREQUENCY) {
-                    fade = i / (FADE_IN_DURATION * SAMPLE_FREQUENCY);
-                } else if (i > numSamples - (FADE_OUT_DURATION * SAMPLE_FREQUENCY)) {
-                    fade = 1.0 - ((i - (numSamples - (FADE_OUT_DURATION * SAMPLE_FREQUENCY))) / (FADE_OUT_DURATION * SAMPLE_FREQUENCY));
-                }
-                sampleValue = (float) (amplitude * Math.sin(i * step) * fade );
-            } else {
-                sampleValue = 0;
-            }
-            byte[] temp = ByteBuffer.allocate(2).putShort(Short.reverseBytes((short) Math.round(sampleValue))).array();
-            for(byte b : temp) {
-                result[head] = b;
-                head++;
-            }
-        }
-        return result;
-    }
-
     private void generateCharacters(double volumePercent) throws IOException {
         if (timing == null) {
             return;
         } else if (translator == null) {
             return;
         }
-        pregeneratedChars = null;
+        pregenChars = null;
         HashMap<Character,byte[]> result = new HashMap<>();
         byte[][] spaces = new byte[2][];
         double amplitude = volumePercent /100*Short.MAX_VALUE;
@@ -198,9 +176,9 @@ public class MorsePlayer {
             Character key = entry.getKey();
             ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 
-            byte[] dit = generateTone(timing.getDitLength() / 1000, frequency, amplitude);
-            byte[] dah = generateTone(timing.getDahLength() / 1000, frequency, amplitude);
-            byte[] intraCharSpace = generateTone(timing.getIntraCharLength() / 1000, frequency, 0);
+            byte[] dit = waveGenerator.generateTone(timing.getDitLength() / 1000, frequency, amplitude);
+            byte[] dah = waveGenerator.generateTone(timing.getDahLength() / 1000, frequency, amplitude);
+            byte[] intraCharSpace = waveGenerator.generateTone(timing.getIntraCharLength() / 1000, frequency, 0);
 
             char[] temp = translator.toMorseCharArray(key.toString())[0][0];
             for(int i = 0; i < temp.length; i++) {
@@ -218,11 +196,11 @@ public class MorsePlayer {
             }
             result.put(key,bytes.toByteArray());
         }
-        spaces[0] = generateTone(timing.getInterCharLength() / 1000, frequency, 0);
-        spaces[1] = generateTone(timing.getInterWordLength() / 1000, frequency, 0);
+        spaces[0] = waveGenerator.generateTone(timing.getInterCharLength() / 1000, frequency, 0);
+        spaces[1] = waveGenerator.generateTone(timing.getInterWordLength() / 1000, frequency, 0);
 
-        pregeneratedSpaces = spaces;
-        pregeneratedChars = result;
+        pregenSpaces = spaces;
+        pregenChars = result;
     }
 
 
@@ -252,14 +230,14 @@ public class MorsePlayer {
             for (int i = 0; i < phrase.length; i++) {
                 for (int j = 0; j < phrase[i].length; j++) {
 
-                    audioStream.write(pregeneratedChars.get(phrase[i][j]));
+                    audioStream.write(pregenChars.get(phrase[i][j]));
                     if (j < phrase[i].length - 1) {
 
-                        audioStream.write(pregeneratedSpaces[0]); //inter-char space
+                        audioStream.write(pregenSpaces[0]); //inter-char space
                     }
                 }
                 if (i < phrase.length - 1) {
-                    audioStream.write(pregeneratedSpaces[1]); //inter-word space
+                    audioStream.write(pregenSpaces[1]); //inter-word space
                 }
             }
 
@@ -345,52 +323,52 @@ public class MorsePlayer {
         return BigInteger.valueOf(i).toByteArray();
     }
 
-    public static void main(String[] args) {
-        MorsePlayer morsePlayer = new MorsePlayerBuilder()
-                .build();
-
-
-            String morse = "Nestled within the bustling marketplace a vibrant tapestry of sights and sounds unfolded" +
-                    " The air hung heavy with the aroma of exotic spices freshly baked bread, and sizzling meats. Merchants" +
-                    " hawked their wares in a cacophony of languages their voices weaving a rhythmic chant as they boasted of" +
-                    " exquisite silks handcrafted jewelry and glistening fruits from distant lands Curious onlookers " +
-                    "adorned in colorful garments meandered through the throngs, their eyes wide with wonder Children " +
-                    "chased after playful pigeons their laughter echoing through the cobblestone streets Above a canopy" +
-                    " of awnings cast a kaleidoscope of shadows sheltering the crowd from the relentless sun In a secluded" +
-                    "corner a lone musician strummed a melancholic melody on his lute The mournful notes seemed to tell a" +
-                    "tale of love lost and journeys undertaken Nearby a group of artisans hammered away at metal their " +
-                    "rhythmic clanging a stark counterpoint to the musicians gentle serenade As the day wore on the shadows" +
-                    " stretched long painting the marketplace in a golden glow. The energy slowly began to wane as the " +
-                    "merchants tallied their earnings and prepared to call it a day Yet, a sense of satisfaction lingered" +
-                    " in the air a testament to the successful exchange of goods and the stories woven within the bustling" +
-                    " marketplace";
-
-            String shortMorse = "SOS";
-
-            String[] alphabetTest = {
-                    "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
-            };
-
-        try {
-
-            ByteArrayOutputStream audio = morsePlayer.generateMorseAudio(shortMorse,100);
-            morsePlayer.saveMorseToWavFile(audio, "DotDash/src/test/java/dev/mcannavan/dotdash/morseSamples/","shortMorse.wav");
-            audio = morsePlayer.generateMorseAudio(morse,100);
-            morsePlayer.saveMorseToWavFile(audio, "DotDash/src/test/java/dev/mcannavan/dotdash/morseSamples/","LongMorse.wav");
-
-            for (String item : alphabetTest) {
-                String temp = "";
-                for(char i : morsePlayer.getTranslator().getCharacter(item)) {
-                    temp = temp.concat(String.valueOf(i));
-                }
-                String name = item + "_["+ temp + "].wav";
-                audio = morsePlayer.generateMorseAudio(item,100);
-                morsePlayer.saveMorseToWavFile(audio, "DotDash/src/test/java/dev/mcannavan/dotdash/morseSamples/",name);
-            }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        System.exit(0);
-
-    }
+//    public static void main(String[] args) {
+//        MorsePlayer morsePlayer = new MorsePlayerBuilder()
+//                .build();
+//
+//
+//            String morse = "Nestled within the bustling marketplace a vibrant tapestry of sights and sounds unfolded" +
+//                    " The air hung heavy with the aroma of exotic spices freshly baked bread, and sizzling meats. Merchants" +
+//                    " hawked their wares in a cacophony of languages their voices weaving a rhythmic chant as they boasted of" +
+//                    " exquisite silks handcrafted jewelry and glistening fruits from distant lands Curious onlookers " +
+//                    "adorned in colorful garments meandered through the throngs, their eyes wide with wonder Children " +
+//                    "chased after playful pigeons their laughter echoing through the cobblestone streets Above a canopy" +
+//                    " of awnings cast a kaleidoscope of shadows sheltering the crowd from the relentless sun In a secluded" +
+//                    "corner a lone musician strummed a melancholic melody on his lute The mournful notes seemed to tell a" +
+//                    "tale of love lost and journeys undertaken Nearby a group of artisans hammered away at metal their " +
+//                    "rhythmic clanging a stark counterpoint to the musicians gentle serenade As the day wore on the shadows" +
+//                    " stretched long painting the marketplace in a golden glow. The energy slowly began to wane as the " +
+//                    "merchants tallied their earnings and prepared to call it a day Yet, a sense of satisfaction lingered" +
+//                    " in the air a testament to the successful exchange of goods and the stories woven within the bustling" +
+//                    " marketplace";
+//
+//            String shortMorse = "SOS";
+//
+//            String[] alphabetTest = {
+//                    "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
+//            };
+//
+//        try {
+//
+//            ByteArrayOutputStream audio = morsePlayer.generateMorseAudio(shortMorse,100);
+//            morsePlayer.saveMorseToWavFile(audio, "DotDash/src/test/java/dev/mcannavan/dotdash/morseSamples/","shortMorse.wav");
+//            audio = morsePlayer.generateMorseAudio(morse,100);
+//            morsePlayer.saveMorseToWavFile(audio, "DotDash/src/test/java/dev/mcannavan/dotdash/morseSamples/","LongMorse.wav");
+//
+//            for (String item : alphabetTest) {
+//                String temp = "";
+//                for(char i : morsePlayer.getTranslator().getCharacter(item)) {
+//                    temp = temp.concat(String.valueOf(i));
+//                }
+//                String name = item + "_["+ temp + "].wav";
+//                audio = morsePlayer.generateMorseAudio(item,100);
+//                morsePlayer.saveMorseToWavFile(audio, "DotDash/src/test/java/dev/mcannavan/dotdash/morseSamples/",name);
+//            }
+//        } catch (Exception e) {
+//            throw new RuntimeException(e);
+//        }
+//        System.exit(0);
+//
+//    }
 }
