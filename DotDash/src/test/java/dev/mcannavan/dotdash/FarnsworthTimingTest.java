@@ -6,9 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class FarnsworthTimingTest {
-
-    //calculateSpeedFromMillis test cases
-
     @Test
     void calculateSpeedFromMillis_WithValidInput_ReturnsCorrectValues() {
         FarnsworthTiming temp = MorseTimingFactory.createFarnsworthTimingFromMs(550,50);
@@ -40,11 +37,6 @@ class FarnsworthTimingTest {
         //test incorrect factory calls
         assertThrows(IllegalArgumentException.class, () -> MorseTimingFactory.createFarnsworthTimingFromMs(-1,100),"failed negative fMs throws exception");
         assertThrows(IllegalArgumentException.class, () -> MorseTimingFactory.createFarnsworthTimingFromMs(100, -1),"failed negative pMs throws exception");
-
-    }
-
-    @Test
-    void calculateSpeedFromMillis_WithInputCausingOverflowAndSmallRatio_ThrowsException() {
 
     }
 
