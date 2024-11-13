@@ -3,7 +3,6 @@ package dev.mcannavan.dotdash;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.Files;
@@ -297,8 +296,8 @@ public class MorsePlayer {
         wavStream.write(shortToLittleEndian((short) N_CHANNELS));
         wavStream.write(intToLittleEndian(waveGenerator.getSampleFrequency()));
         wavStream.write(intToLittleEndian(waveGenerator.getSampleFrequency() * SAMPLES_SIZE_IN_BITS * N_CHANNELS / 8));
-        wavStream.write(shortToLittleEndian((short) (N_CHANNELS * SAMPLES_SIZE_IN_BITS / 8))));
-        wavStream.write(shortToLittleEndian((short) SAMPLES_SIZE_IN_BITS)));
+        wavStream.write(shortToLittleEndian((short) (N_CHANNELS * SAMPLES_SIZE_IN_BITS / 8)));
+        wavStream.write(shortToLittleEndian((short) SAMPLES_SIZE_IN_BITS));
         wavStream.write("data".getBytes());
         wavStream.write(intToLittleEndian(dataSize)); //comparing the hex values wih the original method there is a discrepancy here, but it doesn't seem to affect it functioning
         wavStream.write(temp);
