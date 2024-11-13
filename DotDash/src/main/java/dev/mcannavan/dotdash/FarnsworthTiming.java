@@ -1,6 +1,6 @@
 package dev.mcannavan.dotdash;
 
-class FarnsworthTiming implements IMorseTiming {
+public class FarnsworthTiming implements IMorseTiming {
 
     private float ditLengthMillis; //length of a dit (dot)
     private float dahLengthMillis; //length of a dah (dash)

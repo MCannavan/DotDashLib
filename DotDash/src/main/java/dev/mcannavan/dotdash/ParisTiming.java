@@ -4,7 +4,7 @@ package dev.mcannavan.dotdash;
  * This class represents the Paris timing for Morse code, implementing the {@link IMorseTiming} interface.
  * It provides methods to calculate Morse code timings based on words per minute or milliseconds per dit.
  */
-class ParisTiming implements IMorseTiming {
+public class ParisTiming implements IMorseTiming {
     private float ditLengthMillis; // length of a dit (dot)
     private float dahLengthMillis; // length of a dah (dash)
     private float intraCharLengthMillis; // space between dits and dahs within a character
