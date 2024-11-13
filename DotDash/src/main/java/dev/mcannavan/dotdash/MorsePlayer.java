@@ -115,16 +115,15 @@ public class MorsePlayer {
         return timing;
     }
 
-    public void setTiming(IMorseTiming timing) {
-        this.timing = timing;
-        try {
-            generateCharacters(volumePercent);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    public void setTiming(IMorseTiming timing) throws IOException, IllegalArgumentException{
+       builderSetTiming(timing);
+        generateCharacters(volumePercent);
     }
 
-    private void builderSetTiming(IMorseTiming timing) {
+    private void builderSetTiming(IMorseTiming timing) throws IllegalArgumentException{
+        if(timing == null) {
+            throw new IllegalArgumentException("Timing cannot be null");
+        }
         this.timing = timing;
     }
 
@@ -132,13 +131,10 @@ public class MorsePlayer {
         return frequency;
     }
 
-    public void setFrequency(double frequency) {
-        this.frequency = frequency;
-        try {
-            generateCharacters(volumePercent);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    public void setFrequency(double frequency) throws IOException {
+        builderSetFrequency(frequency);
+        generateCharacters(volumePercent);
+
     }
 
     private void builderSetFrequency(double frequency) {
@@ -149,24 +145,24 @@ public class MorsePlayer {
         return translator;
     }
 
-    public void setTranslator(MorseTranslator translator) {
-        this.translator = translator;
-        try {
-            generateCharacters(volumePercent);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    public void setTranslator(MorseTranslator translator) throws IOException, IllegalArgumentException {
+        builderSetTranslator(translator);
+        generateCharacters(volumePercent);
+
     }
 
-    private void builderSetTranslator(MorseTranslator translator) {
+    private void builderSetTranslator(MorseTranslator translator) throws IllegalArgumentException{
+        if(translator == null) {
+            throw new IllegalArgumentException("Translator cannot be null");
+        }
         this.translator = translator;
     }
 
     private void generateCharacters(double volumePercent) throws IOException {
         if (timing == null) {
-            return;
+            throw new IllegalStateException("Expected non null value for MorseTiming");
         } else if (translator == null) {
-            return;
+            throw new IllegalStateException("Expected non null value for MorseTranslator");
         }
         pregenChars = null;
         HashMap<Character, byte[]> result = new HashMap<>();
