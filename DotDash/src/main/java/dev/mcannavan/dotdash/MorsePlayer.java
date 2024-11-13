@@ -115,13 +115,9 @@ public class MorsePlayer {
         return timing;
     }
 
-    public void setTiming(IMorseTiming timing) {
+    public void setTiming(IMorseTiming timing) throws IOException{
         this.timing = timing;
-        try {
             generateCharacters(volumePercent);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     private void builderSetTiming(IMorseTiming timing) {
@@ -132,13 +128,10 @@ public class MorsePlayer {
         return frequency;
     }
 
-    public void setFrequency(double frequency) {
+    public void setFrequency(double frequency) throws IOException {
         this.frequency = frequency;
-        try {
-            generateCharacters(volumePercent);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        generateCharacters(volumePercent);
+
     }
 
     private void builderSetFrequency(double frequency) {
@@ -149,13 +142,10 @@ public class MorsePlayer {
         return translator;
     }
 
-    public void setTranslator(MorseTranslator translator) {
+    public void setTranslator(MorseTranslator translator) throws IOException {
         this.translator = translator;
-        try {
-            generateCharacters(volumePercent);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        generateCharacters(volumePercent);
+
     }
 
     private void builderSetTranslator(MorseTranslator translator) {
