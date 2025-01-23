@@ -24,6 +24,9 @@ public class MorsePlayer {
     private MorseTranslator translator;
     private IMorseTiming timing;
     private double frequency; //Tone frequency in Hertz (Hz)
+    private WaveGenerator waveGenerator;
+    private byte[][] pregenSpaces = new byte[2][];
+    private int volumePercent = 100;
 
     public WaveGenerator getWaveGenerator() {
         return waveGenerator;
@@ -33,14 +36,9 @@ public class MorsePlayer {
         this.waveGenerator = waveGenerator;
     }
 
-    private WaveGenerator waveGenerator;
-
 
     private HashMap<Character, byte[]> pregenChars = new HashMap<Character, byte[]>();
 
-    private byte[][] pregenSpaces = new byte[2][];
-
-    private int volumePercent = 100;
 
     MorsePlayer() {
 
@@ -205,7 +203,7 @@ public class MorsePlayer {
      * @param morse         the {@code String} to generate audio data from
      * @param volumePercent the volume of the generated audio data as an {@code int} out of 100
      * @return a {@code ByteArrayOutputStream} containing Bytes of morse audio
-     * @throws IllegalArgumentException if the given morse contains a character not found in the {@code MorseTranslator} translator
+     * @throws IllegalArgumentException if the given morse contains a character not found in the {@code MorseTranslator}
      * @throws IOException              if an IO Exception occurs
      */
     public ByteArrayOutputStream generateMorseAudio(String morse, int volumePercent) throws IllegalArgumentException, IOException {
@@ -277,6 +275,13 @@ public class MorsePlayer {
         }
     }
 
+    /**
+     * Appends wav file data to a given {@code ByteArrayOutputStream}
+     *
+     * @param audioStream the audio {@code ByteArrayOutputStream} to be appended to
+     * @return a {@code ByteArrayOutputStream} containing the original {@code ByteArrayOutputStream} with an appended wav file header
+     * @throws IOException              if an IO Exception occurs
+     */
     public ByteArrayOutputStream generateWavFileData(ByteArrayOutputStream audioStream) throws IOException {
         ByteArrayOutputStream wavStream = new ByteArrayOutputStream();
 
@@ -295,12 +300,20 @@ public class MorsePlayer {
         wavStream.write(shortToLittleEndian((short) (N_CHANNELS * SAMPLES_SIZE_IN_BITS / 8)));
         wavStream.write(shortToLittleEndian((short) SAMPLES_SIZE_IN_BITS));
         wavStream.write("data".getBytes());
-        wavStream.write(intToLittleEndian(dataSize)); //comparing the hex values wih the original method there is a discrepancy here, but it doesn't seem to affect it functioning
+        wavStream.write(intToLittleEndian(dataSize));
         wavStream.write(temp);
 
         return wavStream;
     }
 
+    /**
+     * Creates a file at the given location with the given audio data in the .wav format
+     *
+     * @param audioStream the audio {@code ByteArrayOutputStream} to be appended to
+     * @param filePath the path to the directory as a {@code String} that will contain the wav file (e.g. "/home/user/Arbeitsfläche")
+     * @param fileName the name of the file as a {@code String}
+     * @throws IOException if an IO Exception occurs
+     */
     public void saveMorseToWavFile(ByteArrayOutputStream audioStream, String filePath, String fileName) throws IOException {
         fileName = !fileName.endsWith(".wav") ? fileName.concat(".wav") : fileName; //append .wav if not already included
 
@@ -321,4 +334,5 @@ public class MorsePlayer {
     private byte[] shortToLittleEndian(short value) {
         return ByteBuffer.allocate(2).order(ByteOrder.LITTLE_ENDIAN).putShort(value).array();
     }
+
 }

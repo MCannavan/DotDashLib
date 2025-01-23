@@ -272,6 +272,7 @@ public class MorseTranslator {
         return morse;
     }
 
+
     /**
      * Converts the input text to a {@code String[][]} of morse code .
      * <ul>
