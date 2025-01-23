@@ -49,10 +49,11 @@ public class ParisTiming implements IMorseTiming {
      * @throws IllegalArgumentException if the input length of a dit is less than 0
      */
     public void calculateSpeedFromMillis(float ms) throws IllegalArgumentException {
-        if (ms < 0) {
+        if (ms <= 0) {
             throw new IllegalArgumentException("Input ms must be greater than or equal to " + 0 + ". Actual value: " + ms);
         }
         wpm = (60f * (1f / (ms / 1000)) / 50f);
+        wpm = (float) (Math.round(wpm * 100.0) / 100.0);
         ditLengthMillis = Math.round(ms);
         dahLengthMillis = Math.round(ms * 3);
         intraCharLengthMillis = Math.round(ms);
