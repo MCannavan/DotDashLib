@@ -30,13 +30,13 @@ public class WaveGenerator {
         this.sampleFrequency = sampleFrequency;
     }
 
-    protected byte[] generateTone(float duration, double frequency, double amplitude) {
+    protected byte[] generateTone(float duration, double frequency, double amplitude) throws IllegalArgumentException {
         if(duration <= 0) {
             throw new IllegalArgumentException("Duration must be greater than 0");
         }
 
-        final double FADE_IN_DURATION = duration * 0.05;
-        final double FADE_OUT_DURATION = duration * 0.055;
+        final double FADE_IN_DURATION = duration * 0.075;
+        final double FADE_OUT_DURATION = duration * 0.08;
 
         int numSamples = (int) (duration * sampleFrequency * N_CHANNELS);
         byte[] result = new byte[numSamples*2];

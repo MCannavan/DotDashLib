@@ -7,10 +7,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -32,11 +29,11 @@ class MorsePlayerTest {
     void setUp() throws IOException {
         MockitoAnnotations.openMocks(this);
 
-        Map<Character, String> translatorMap = HashBiMap.create();
+        BiMap<Character, String> translatorMap = HashBiMap.create();
         translatorMap.put('A', ".-");
         translatorMap.put('B', "-...");
 
-        when(mockTranslator.getMap()).thenReturn((BiMap<Character, String>) translatorMap);
+        when(mockTranslator.getMap()).thenReturn(translatorMap);
         when(mockTranslator.validateInput(anyString())).thenReturn(true);
 
         when(mockTranslator.toMorseCharArray(anyString()))
@@ -119,10 +116,10 @@ class MorsePlayerTest {
     @Test
     void setTranslator_withValidInput_updatesTranslatorAndGeneratedCharacters() throws IOException {
         MorseTranslator newTranslator = mock(MorseTranslator.class);
-        Map<Character,String> map = HashBiMap.create();
+        BiMap<Character, String> map = HashBiMap.create();
         map.put('E', ".");
         map.put('T', "-");
-        when(newTranslator.getMap()).thenReturn((BiMap<Character, String>) map);
+        when(newTranslator.getMap()).thenReturn(map);
         when(newTranslator.toMorseCharArray(anyString()))
                 .thenAnswer(invocation -> {
                     String arg = invocation.getArgument(0);
@@ -139,18 +136,4 @@ class MorsePlayerTest {
     void setTranslator_withNullInput_throwsIllegalArgumentException() {
         assertThrows(IllegalArgumentException.class, () -> morsePlayer.setTranslator(null));
     }
-
-
-
-
-    //TODO test morsetranslator methods:
-    // morseplayerbuilder_withDefaults_returnsMorsePlayer
-    // morsePlayerBuilder_withValidInputs_returnsMorsePlayer
-    // morsePlayerBuilder_withInvalidInputs_throwsException
-    // setter test methods
-    // generateCharacters_
-    // generateMorseAudio
-    // generateWavFileData
-    // intToLittleEndian
-    // shortToLittleEndian
 }

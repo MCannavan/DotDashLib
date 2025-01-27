@@ -12,8 +12,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 //TODO
-// - write unit tests for all methods
-// - code cleanup
 // - implement better exception handling & throwing
 // - add javadocs
 
@@ -128,12 +126,19 @@ public class MorsePlayer {
     public double getFrequency() {
         return frequency;
     }
-
+    /**
+     * sets the frequency for the {@code MorsePlayer} to generate audio at
+     *
+     * @param frequency the frequency for audio to be generated at, as a {@code double}
+     * @throws IOException if an IO Exception occurs
+     */
     public void setFrequency(double frequency) throws IOException {
         builderSetFrequency(frequency);
         generateCharacters(volumePercent);
 
     }
+
+
 
     private void builderSetFrequency(double frequency) {
         this.frequency = frequency;
@@ -310,7 +315,7 @@ public class MorsePlayer {
      * Creates a file at the given location with the given audio data in the .wav format
      *
      * @param audioStream the audio {@code ByteArrayOutputStream} to be appended to
-     * @param filePath the path to the directory as a {@code String} that will contain the wav file (e.g. "/home/user/Arbeitsfläche")
+     * @param filePath the path to the directory as a {@code String} that will contain the wav file (e.g. "/home/user/desktop")
      * @param fileName the name of the file as a {@code String}
      * @throws IOException if an IO Exception occurs
      */
