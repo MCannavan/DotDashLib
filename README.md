@@ -25,8 +25,9 @@ For maven, add this to your `pom.xml`
 ```xml
 <dependency>
   <groupId>dev.mcannavan</groupId>
-  <artifactId>dotdash</artifactId>
-</dependency> 
+  <artifactId>DotDash</artifactId>
+  <version>1.0.7</version>
+</dependency>
 ```
 then run
 ```
@@ -42,7 +43,7 @@ repositories {
 }
   
 dependencies {
-    implementation 'dev.mcannavan.dotdash:1.0.0' //for version 1.0.0, adjust accordingly
+    implementation 'dev.mcannavan.dotdash:1.0.7'
 }
 
 ```
