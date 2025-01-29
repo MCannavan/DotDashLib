@@ -6,7 +6,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>dev.mcannavan</groupId>
     <artifactId>DotDash</artifactId>
-    <version>1.0.7</version>
+    <version>1.0.8</version>
 
     <name>${project.groupId}:${project.artifactId}</name>
     <description>A simple Java library for translating into and generating wav data of morse code</description>

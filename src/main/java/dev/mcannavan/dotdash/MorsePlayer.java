@@ -68,22 +68,30 @@ public class MorsePlayer {
         }
 
         public MorsePlayerBuilder withTranslator(MorseTranslator translator) {
-            this.translator = translator;
+            if(translator != null) {
+                this.translator = translator;
+            }
             return this;
         }
 
         public MorsePlayerBuilder withTiming(IMorseTiming timing) {
-            this.timing = timing;
+            if(timing != null) {
+                this.timing = timing;
+            }
             return this;
         }
 
         public MorsePlayerBuilder withFrequency(double frequency) {
-            this.frequency = frequency;
+            if (frequency > 0) {
+                this.frequency = frequency;
+            }
             return this;
         }
 
         public MorsePlayerBuilder withWaveGenerator(WaveGenerator waveGenerator) {
-            this.waveGenerator = waveGenerator;
+            if(waveGenerator != null) {
+                this.waveGenerator = waveGenerator;
+            }
             return this;
         }
 
