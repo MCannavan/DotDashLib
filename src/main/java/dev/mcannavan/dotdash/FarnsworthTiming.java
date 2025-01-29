@@ -77,6 +77,12 @@ public class FarnsworthTiming implements IMorseTiming {
         float fMs = (float) 1 / ((fWpm * 50) / 60) * 1000;
         float pMs = (float) 1 / ((pWpm * 50) / 60) * 1000;
 
+        ditLengthMillis = Math.round(pMs);
+        dahLengthMillis = Math.round(3* pMs);
+        intraCharLengthMillis = Math.round(pMs);
+        interCharLengthMillis = Math.round(3 * fMs);
+        interWordLengthMillis = Math.round(7 * fMs);
+
             if (Float.isInfinite(7 * fMs)) {
                 throw new ArithmeticException("floating-point overflow when calculating Farnsworth timing lengths (fMs*7 must be less than Float.MAX_VALUE). fMs: " + fMs + " from fWpm: " + fWpm);
             } else if (Float.isInfinite(3 * pMs)) {

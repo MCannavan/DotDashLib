@@ -18,7 +18,8 @@ this library for the niche purpose of playing accurate morse code in pure java.
 - Ability to use custom morse code translation sets 
   - presets include: latin alphabet, arabic numerals, & punctuation
 - Generate Wav Files from text
-- Control over the speed, pitch, & volume of the output
+  - Control over the speed, pitch, & volume of the output
+  - includes Paris and Farnsworth speed
 
 ## Installation
 For maven, add this to your `pom.xml`
@@ -26,7 +27,7 @@ For maven, add this to your `pom.xml`
 <dependency>
   <groupId>dev.mcannavan</groupId>
   <artifactId>DotDash</artifactId>
-  <version>1.0.7</version>
+  <version>1.0.8</version>
 </dependency>
 ```
 then run
@@ -43,12 +44,12 @@ repositories {
 }
   
 dependencies {
-    implementation 'dev.mcannavan.dotdash:1.0.7'
+    implementation 'dev.mcannavan.dotdash:1.0.8'
 }
 
 ```
 
-Also available as a .jar file including sources.jar and javadocs.jar from the releases page.
+For more installation methods please check the maven central repository page. Available as a .jar file including sources.jar and javadocs.jar from the releases page.
 
 ## Usage
 Some basic usage patterns:
