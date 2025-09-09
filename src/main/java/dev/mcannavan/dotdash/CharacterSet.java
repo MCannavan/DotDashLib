@@ -3,6 +3,8 @@ package dev.mcannavan.dotdash;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 
+//TODO add Greek, Cyrillic, Hebrew, Arabic, Kurdish, Japanese (Wabun), Persian, Korean
+//TODO consider other alphabets that can be added
 /**
  * A set of default character sets.
  */
