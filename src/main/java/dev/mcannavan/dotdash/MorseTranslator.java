@@ -201,8 +201,11 @@ public class MorseTranslator {
         return result;
     }
 
-    //TODO add exception handling
     public String removeInvalidSymbols(String text) {
+        return replaceInvalidSymbols(text, "");
+    }
+
+    public String replaceInvalidSymbols(String text, String replacement) {
         if(validateInput(text)) {
             return text;
         }
@@ -212,7 +215,7 @@ public class MorseTranslator {
             int index = entry.getKey();
             String first = result.substring(0,index);
             String second = result.substring(index+1);
-            result = first+second;
+            result = first+replacement+second;
         }
         return result;
     }
