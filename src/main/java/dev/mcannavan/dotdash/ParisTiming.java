@@ -48,7 +48,7 @@ public class ParisTiming implements IMorseTiming {
      * @param ms the length of a dit (dot) in milliseconds
      * @throws IllegalArgumentException if the input length of a dit is less than 0
      */
-    public void calculateSpeedFromMillis(float ms) throws IllegalArgumentException {
+    public void calculateSpeedFromMillis(float ms) {
         if (ms <= 0) {
             throw new IllegalArgumentException("Input ms must be greater than or equal to " + 0 + ". Actual value: " + ms);
         }
@@ -66,9 +66,9 @@ public class ParisTiming implements IMorseTiming {
      *
      * @param wpm the words per minute (WPM) using the PARIS approach.
      * @throws IllegalArgumentException if the input WPM is less than or equal to 0
-     * @throws ArithmeticException if there is a floating-point overflow when calculating the length of a dit
+     * @throws ArithmeticException if there is a floating-point overflow when calculating the length of the inter-word length (7 * ditLengthMillis)
      */
-    public void calculateSpeedFromWpm(float wpm) throws IllegalArgumentException, ArithmeticException {
+    public void calculateSpeedFromWpm(float wpm) {
         if (wpm <= 0) {
             throw new IllegalArgumentException("Input wpm must be greater than 0. Actual value: " + wpm);
         }

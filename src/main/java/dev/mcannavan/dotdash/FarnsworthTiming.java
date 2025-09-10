@@ -43,7 +43,7 @@ public class FarnsworthTiming implements IMorseTiming {
         return fWpm;
     }
 
-    public void calculateSpeedFromMillis(float fMs, float pMs) throws IllegalArgumentException {
+    public void calculateSpeedFromMillis(float fMs, float pMs) {
         if (fMs <= 0) {
             throw new IllegalArgumentException("expected non-negative, non-zero value for fMs, but got " + fMs + ".");
         } else if (pMs <= 0) {
@@ -63,7 +63,7 @@ public class FarnsworthTiming implements IMorseTiming {
         interWordLengthMillis = Math.round(7 * fMs);
     }
 
-    public void calculateSpeedFromWpm(float fWpm, float pWpm) throws IllegalArgumentException, ArithmeticException {
+    public void calculateSpeedFromWpm(float fWpm, float pWpm) throws ArithmeticException {
         if (fWpm <= 0) {
             throw new IllegalArgumentException("expected non-negative, non-zero value for fWpm, but got " + fWpm + ".");
         } else if (pWpm <= 0) {
