@@ -30,7 +30,7 @@ public class WaveGenerator {
         this.sampleFrequency = sampleFrequency;
     }
 
-    protected byte[] generateTone(float duration, double frequency, double amplitude) throws IllegalArgumentException {
+    protected byte[] generateTone(float duration, double frequency, double amplitude) {
         if(duration <= 0) {
             throw new IllegalArgumentException("Duration must be greater than 0");
         }

@@ -119,12 +119,12 @@ public class MorsePlayer {
         return timing;
     }
 
-    public void setTiming(IMorseTiming timing) throws IOException, IllegalArgumentException{
+    public void setTiming(IMorseTiming timing) throws IOException {
        builderSetTiming(timing);
         generateCharacters(volumePercent);
     }
 
-    private void builderSetTiming(IMorseTiming timing) throws IllegalArgumentException{
+    private void builderSetTiming(IMorseTiming timing) {
         if(timing == null) {
             throw new IllegalArgumentException("Timing cannot be null");
         }
@@ -156,13 +156,13 @@ public class MorsePlayer {
         return translator;
     }
 
-    public void setTranslator(MorseTranslator translator) throws IOException, IllegalArgumentException {
+    public void setTranslator(MorseTranslator translator) throws IOException {
         builderSetTranslator(translator);
         generateCharacters(volumePercent);
 
     }
 
-    private void builderSetTranslator(MorseTranslator translator) throws IllegalArgumentException{
+    private void builderSetTranslator(MorseTranslator translator) {
         if(translator == null) {
             throw new IllegalArgumentException("Translator cannot be null");
         }
